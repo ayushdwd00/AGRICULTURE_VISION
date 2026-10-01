@@ -1,0 +1,16 @@
+                                    precision    recall  f1-score   support
+
+               Bacterial Infection       1.00      0.75      0.86         4
+         Fungal Leaf Spot / Blight       0.67      1.00      0.80         4
+                      Healthy Crop       1.00      1.00      1.00         4
+            Heat & Sunlight Stress       1.00      1.00      1.00         5
+               Nitrogen Deficiency       0.80      1.00      0.89         4
+     Pest Attack (mites / insects)       1.00      0.75      0.86         4
+             Phosphorus Deficiency       1.00      1.00      1.00         5
+              Potassium Deficiency       1.00      1.00      1.00         4
+                   Viral Infection       1.00      1.00      1.00         4
+Water Stress (over/under watering)       1.00      0.75      0.86         4
+
+                          accuracy                           0.93        42
+                         macro avg       0.95      0.93      0.93        42
+                      weighted avg       0.95      0.93      0.93        42

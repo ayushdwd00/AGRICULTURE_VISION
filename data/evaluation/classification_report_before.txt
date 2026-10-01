@@ -1,0 +1,21 @@
+                                         precision    recall  f1-score   support
+
+           Bell Pepper - Bacterial spot      1.000     1.000     1.000        10
+                  Bell Pepper - Healthy      1.000     1.000     1.000        10
+                  Potato - Early blight      1.000     1.000     1.000        10
+                   Potato - Late blight      1.000     0.900     0.947        10
+                       Potato - Healthy      1.000     1.000     1.000        10
+                Tomato - Bacterial spot      1.000     0.500     0.667        10
+                  Tomato - Early blight      0.769     1.000     0.870        10
+                   Tomato - Late blight      0.833     1.000     0.909        10
+                    Tomato - Leaf mould      1.000     0.800     0.889        10
+            Tomato - Septoria leaf spot      0.769     1.000     0.870        10
+Tomato - Two-spotted spider mite damage      0.833     1.000     0.909        10
+                   Tomato - Target spot      1.000     0.800     0.889        10
+ Tomato - Tomato yellow leaf curl virus      1.000     1.000     1.000        10
+           Tomato - Tomato mosaic virus      1.000     1.000     1.000        10
+                       Tomato - Healthy      1.000     1.000     1.000        10
+
+                               accuracy                          0.933       150
+                              macro avg      0.947     0.933     0.930       150
+                           weighted avg      0.947     0.933     0.930       150

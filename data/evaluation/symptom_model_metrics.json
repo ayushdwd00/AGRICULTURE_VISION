@@ -1,0 +1,21 @@
+{
+  "model": "agrivision_symptom_model.pkl",
+  "csv": "symptoms.csv",
+  "accuracy": 0.9285714285714286,
+  "n_rows": 210,
+  "n_train": 168,
+  "n_test": 42,
+  "labels": [
+    "Nitrogen Deficiency",
+    "Phosphorus Deficiency",
+    "Potassium Deficiency",
+    "Fungal Leaf Spot / Blight",
+    "Bacterial Infection",
+    "Viral Infection",
+    "Pest Attack (mites / insects)",
+    "Water Stress (over/under watering)",
+    "Heat & Sunlight Stress",
+    "Healthy Crop"
+  ],
+  "keyword_rule_vs_csv_flag_mismatches": 0
+}

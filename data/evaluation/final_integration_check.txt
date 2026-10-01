@@ -1,0 +1,12 @@
+M1 predict_image           Tomato___Early_blight 82.2% via agrivision_cnn.pth error=None
+M1 predict_symptoms        Fungal Leaf Spot / Blight 58.0% family=fungal
+M1 combine_signals         min=58.0% confident=False agree=True
+M1 explanation             source=offline-fallback chars=620
+M1 gradcam                 error=None overlay=(224, 224)
+M1 model_status            agrivision_cnn.pth classes=38
+M1 symptom_status          available=True
+M2 weather_report          level=HIGH risks=['fungal', 'bacterial'] ai=offline-fallback
+M3 calculate               112.5 kg cost=675.0
+M4 verify_product          found=True verified=True registry=10
+M5 match_schemes           matches=8 near=0
+M6 rental                  machines=4 login=True booking_ok=True clash_prevented=True

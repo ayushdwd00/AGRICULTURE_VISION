@@ -1,0 +1,211 @@
+symptom_text,leaf_colour_change,spot_pattern,wilting,leaf_curling,stunted_growth,label
+"the older leaves are turning pale yellow from the bottom of the plant, this started about a week ago",1,0,0,0,0,Nitrogen Deficiency
+"the older leaves are turning pale yellow from the bottom of the plant and the plant is small and growing slowly, it looks worse in the afternoon",1,0,0,0,1,Nitrogen Deficiency
+"lower leaves look yellow while the veins stay green, it is spreading to nearby plants",1,0,0,0,0,Nitrogen Deficiency
+"lower leaves look yellow while the veins stay green and the whole plant looks thin and the growth is poor, around half of the field is affected",1,0,0,0,0,Nitrogen Deficiency
+"the leaves are pale and the colour is fading from the older foliage, I noticed it after two days of rain",1,0,0,0,0,Nitrogen Deficiency
+"the leaves are pale and the colour is fading from the older foliage and the leaves look limp and drooping, the neighbouring field looks fine",1,1,1,0,0,Nitrogen Deficiency
+"new leaves are light green and the older leaves are yellow, it looks worse in the afternoon",1,0,0,0,0,Nitrogen Deficiency
+"new leaves are light green and the older leaves are yellow and the plant is small and growing slowly, the same thing happened last season",1,0,0,0,1,Nitrogen Deficiency
+"the leaf colour is going from green to pale yellow, around half of the field is affected",1,0,0,0,0,Nitrogen Deficiency
+"the leaf colour is going from green to pale yellow and the whole plant looks thin and the growth is poor, I have not sprayed anything yet",1,0,0,0,0,Nitrogen Deficiency
+"the bottom leaves have turned yellow and the plant is weak, the neighbouring field looks fine",1,1,0,0,1,Nitrogen Deficiency
+"the bottom leaves have turned yellow and the plant is weak and the leaves look limp and drooping, the soil here is clay type",1,0,1,0,1,Nitrogen Deficiency
+"the entire plant is pale green with the oldest leaves most affected, the same thing happened last season",1,0,0,0,0,Nitrogen Deficiency
+"the entire plant is pale green with the oldest leaves most affected and the plant is small and growing slowly, it is worse in the low lying part of the field",1,0,0,0,1,Nitrogen Deficiency
+"the lower foliage is yellow while the plant keeps growing taller, I have not sprayed anything yet",1,0,0,0,0,Nitrogen Deficiency
+"the lower foliage is yellow while the plant keeps growing taller and the whole plant looks thin and the growth is poor, this started about a week ago",1,0,0,0,0,Nitrogen Deficiency
+"growth is slow and the colour is fading from the bottom leaves upward, the soil here is clay type",0,0,0,0,0,Nitrogen Deficiency
+"growth is slow and the colour is fading from the bottom leaves upward and the leaves look limp and drooping, it is spreading to nearby plants",0,0,1,0,0,Nitrogen Deficiency
+"old leaves are yellow, this started about a week ago",1,0,0,0,0,Nitrogen Deficiency
+"lower leaves pale yellow, it is spreading to nearby plants",1,0,0,0,0,Nitrogen Deficiency
+"plant is yellow from the bottom, I noticed it after two days of rain",1,0,0,0,0,Nitrogen Deficiency
+"the leaves are turning dark purple and the plant is not growing, this started about a week ago",1,0,0,0,1,Phosphorus Deficiency
+"the leaves are turning dark purple and the plant is not growing and the leaves are small and the plant is short, it looks worse in the afternoon",1,0,0,0,1,Phosphorus Deficiency
+"older leaves have a purple colour and growth has stopped, it is spreading to nearby plants",1,0,0,0,1,Phosphorus Deficiency
+"older leaves have a purple colour and growth has stopped and the leaf tips look brown and dry, around half of the field is affected",1,0,0,0,1,Phosphorus Deficiency
+"the leaf undersides look dark purple, I noticed it after two days of rain",1,0,0,0,0,Phosphorus Deficiency
+"the leaf undersides look dark purple and the plant is stunted and not growing, the neighbouring field looks fine",1,1,0,0,1,Phosphorus Deficiency
+"the plant is short and the leaves are dark and dull, it looks worse in the afternoon",1,0,0,0,0,Phosphorus Deficiency
+"the plant is short and the leaves are dark and dull and the leaves are small and the plant is short, the same thing happened last season",1,0,0,0,0,Phosphorus Deficiency
+"leaves are turning purple with slow growth, around half of the field is affected",1,0,0,0,1,Phosphorus Deficiency
+"leaves are turning purple with slow growth and the leaf tips look brown and dry, I have not sprayed anything yet",1,0,0,0,1,Phosphorus Deficiency
+"the plant is dwarf and the older leaves look purple, the neighbouring field looks fine",1,1,0,0,1,Phosphorus Deficiency
+"the plant is dwarf and the older leaves look purple and the plant is stunted and not growing, the soil here is clay type",1,0,0,0,1,Phosphorus Deficiency
+"the plant stays short and the leaves have a dark purple tint, the same thing happened last season",1,0,0,0,0,Phosphorus Deficiency
+"the plant stays short and the leaves have a dark purple tint and the leaves are small and the plant is short, it is worse in the low lying part of the field",1,0,0,0,0,Phosphorus Deficiency
+"the foliage is dull dark green with purple leaf margins, I have not sprayed anything yet",1,0,0,0,0,Phosphorus Deficiency
+"the foliage is dull dark green with purple leaf margins and the leaf tips look brown and dry, this started about a week ago",1,0,0,0,0,Phosphorus Deficiency
+"the plant is not developing and the older leaves are purple, the soil here is clay type",1,0,0,0,0,Phosphorus Deficiency
+"the plant is not developing and the older leaves are purple and the plant is stunted and not growing, it is spreading to nearby plants",1,0,0,0,1,Phosphorus Deficiency
+"leaves are purple, this started about a week ago",1,0,0,0,0,Phosphorus Deficiency
+"purple leaves and no growth, it is spreading to nearby plants",1,0,0,0,1,Phosphorus Deficiency
+"plant is short with purple leaves, I noticed it after two days of rain",1,0,0,0,0,Phosphorus Deficiency
+"the leaf edges are turning brown and drying from the margins, this started about a week ago",1,0,1,0,0,Potassium Deficiency
+"the leaf edges are turning brown and drying from the margins and there are small brown patches on the older leaves, it looks worse in the afternoon",1,1,1,0,0,Potassium Deficiency
+"the edges of older leaves are scorched and brown, it is spreading to nearby plants",1,0,0,0,0,Potassium Deficiency
+"the edges of older leaves are scorched and brown and the plant looks weak and slow growing, around half of the field is affected",1,0,0,0,1,Potassium Deficiency
+"leaf margins look brown and the leaves are drying at the border, I noticed it after two days of rain",1,0,1,0,0,Potassium Deficiency
+"leaf margins look brown and the leaves are drying at the border and the leaves are small with brown margins, the neighbouring field looks fine",1,1,1,0,0,Potassium Deficiency
+"old leaves have brown edges and the plant is weak, it looks worse in the afternoon",1,0,0,0,1,Potassium Deficiency
+"old leaves have brown edges and the plant is weak and there are small brown patches on the older leaves, the same thing happened last season",1,1,0,0,1,Potassium Deficiency
+"the leaf border is turning brown and burning at the edges, around half of the field is affected",1,0,0,0,0,Potassium Deficiency
+"the leaf border is turning brown and burning at the edges and the plant looks weak and slow growing, I have not sprayed anything yet",1,0,0,0,1,Potassium Deficiency
+"the leaves have brown margins and are drying from the sides, the neighbouring field looks fine",1,1,1,0,0,Potassium Deficiency
+"the leaves have brown margins and are drying from the sides and the leaves are small with brown margins, the soil here is clay type",1,0,1,0,0,Potassium Deficiency
+"the older leaves are brown and dry along the margins, the same thing happened last season",1,0,0,0,0,Potassium Deficiency
+"the older leaves are brown and dry along the margins and there are small brown patches on the older leaves, it is worse in the low lying part of the field",1,1,0,0,0,Potassium Deficiency
+"the leaf border is scorched and the plant is weak, I have not sprayed anything yet",0,0,0,0,1,Potassium Deficiency
+"the leaf border is scorched and the plant is weak and the plant looks weak and slow growing, this started about a week ago",0,0,0,0,1,Potassium Deficiency
+"large brown drying patches appear at the leaf edges, the soil here is clay type",1,1,1,0,0,Potassium Deficiency
+"large brown drying patches appear at the leaf edges and the leaves are small with brown margins, it is spreading to nearby plants",1,1,1,0,0,Potassium Deficiency
+"leaf edges are brown, this started about a week ago",1,0,0,0,0,Potassium Deficiency
+"brown dry leaf margins, it is spreading to nearby plants",1,0,0,0,0,Potassium Deficiency
+"leaf border burning brown, I noticed it after two days of rain",1,0,0,0,0,Potassium Deficiency
+"there are round brown spots on the leaves with dark rings, this started about a week ago",1,1,0,0,0,Fungal Leaf Spot / Blight
+"there are round brown spots on the leaves with dark rings and the spots are spreading and the leaves are wilting, it looks worse in the afternoon",1,1,1,0,0,Fungal Leaf Spot / Blight
+"the leaves show brown lesions with a target like pattern, it is spreading to nearby plants",1,1,0,0,0,Fungal Leaf Spot / Blight
+"the leaves show brown lesions with a target like pattern and the lower leaves have lesions and dry up, around half of the field is affected",1,1,1,0,0,Fungal Leaf Spot / Blight
+"small dark spots are appearing on the lower leaves, I noticed it after two days of rain",1,1,0,0,0,Fungal Leaf Spot / Blight
+"small dark spots are appearing on the lower leaves and the plants are stunted with rot on the leaf stalk, the neighbouring field looks fine",1,1,0,0,1,Fungal Leaf Spot / Blight
+"the leaf surface has grey patches with mould like powder, it looks worse in the afternoon",1,1,0,0,0,Fungal Leaf Spot / Blight
+"the leaf surface has grey patches with mould like powder and the spots are spreading and the leaves are wilting, the same thing happened last season",1,1,1,0,0,Fungal Leaf Spot / Blight
+"the plants have rusty pustules and damaged leaves, around half of the field is affected",0,1,0,0,0,Fungal Leaf Spot / Blight
+"the plants have rusty pustules and damaged leaves and the lower leaves have lesions and dry up, I have not sprayed anything yet",0,1,1,0,0,Fungal Leaf Spot / Blight
+"the leaves are showing concentric rings and brown rot, the neighbouring field looks fine",1,1,0,0,0,Fungal Leaf Spot / Blight
+"the leaves are showing concentric rings and brown rot and the plants are stunted with rot on the leaf stalk, the soil here is clay type",1,1,0,0,1,Fungal Leaf Spot / Blight
+"concentric rings and target shaped lesions are visible on the leaves, the same thing happened last season",0,1,0,0,0,Fungal Leaf Spot / Blight
+"concentric rings and target shaped lesions are visible on the leaves and the spots are spreading and the leaves are wilting, it is worse in the low lying part of the field",0,1,1,0,0,Fungal Leaf Spot / Blight
+"grey powdery mould is spreading on the leaf surface, I have not sprayed anything yet",1,1,0,0,0,Fungal Leaf Spot / Blight
+"grey powdery mould is spreading on the leaf surface and the lower leaves have lesions and dry up, this started about a week ago",1,1,1,0,0,Fungal Leaf Spot / Blight
+"rusty pustules with dark borders are showing on the underside of the leaves, the soil here is clay type",1,1,0,0,0,Fungal Leaf Spot / Blight
+"rusty pustules with dark borders are showing on the underside of the leaves and the plants are stunted with rot on the leaf stalk, it is spreading to nearby plants",1,1,0,0,1,Fungal Leaf Spot / Blight
+"brown spots with rings on leaves, this started about a week ago",1,1,0,0,0,Fungal Leaf Spot / Blight
+"leaves have dark spots and lesions, it is spreading to nearby plants",1,1,0,0,0,Fungal Leaf Spot / Blight
+"grey powder on the leaves, I noticed it after two days of rain",1,1,0,0,0,Fungal Leaf Spot / Blight
+"leaves have dark water soaked spots and the plant is wilting, this started about a week ago",1,1,1,0,0,Bacterial Infection
+"leaves have dark water soaked spots and the plant is wilting and small black lesions are spreading after the rain, it looks worse in the afternoon",1,1,1,0,0,Bacterial Infection
+"the leaf spots are dark and the leaves are collapsing, it is spreading to nearby plants",1,1,0,0,0,Bacterial Infection
+"the leaf spots are dark and the leaves are collapsing and the plant looks stunted with spots on the fruit, around half of the field is affected",1,1,0,0,1,Bacterial Infection
+"small black lesions are spreading over the leaves, I noticed it after two days of rain",1,1,0,0,0,Bacterial Infection
+"small black lesions are spreading over the leaves and the leaves are wilting and the spots have merged, the neighbouring field looks fine",1,1,1,0,0,Bacterial Infection
+"there are dark spots with a halo on the leaves, it looks worse in the afternoon",1,1,0,0,0,Bacterial Infection
+"there are dark spots with a halo on the leaves and small black lesions are spreading after the rain, the same thing happened last season",1,1,0,0,0,Bacterial Infection
+"the leaves look greasy with dark spots and they are drying, around half of the field is affected",1,1,1,0,0,Bacterial Infection
+"the leaves look greasy with dark spots and they are drying and the plant looks stunted with spots on the fruit, I have not sprayed anything yet",1,1,1,0,1,Bacterial Infection
+"dark lesions appear on the leaves and the plant is drooping, the neighbouring field looks fine",1,1,1,0,0,Bacterial Infection
+"dark lesions appear on the leaves and the plant is drooping and the leaves are wilting and the spots have merged, the soil here is clay type",1,1,1,0,0,Bacterial Infection
+"water soaked greasy areas and angular lesions appear on the leaves, the same thing happened last season",0,1,0,0,0,Bacterial Infection
+"water soaked greasy areas and angular lesions appear on the leaves and small black lesions are spreading after the rain, it is worse in the low lying part of the field",1,1,0,0,0,Bacterial Infection
+"the spots have a yellow halo and the leaf stalk is dark, I have not sprayed anything yet",1,1,0,0,0,Bacterial Infection
+"the spots have a yellow halo and the leaf stalk is dark and the plant looks stunted with spots on the fruit, this started about a week ago",1,1,0,0,1,Bacterial Infection
+"black lesions are spreading quickly after the rain, the soil here is clay type",1,1,0,0,0,Bacterial Infection
+"black lesions are spreading quickly after the rain and the leaves are wilting and the spots have merged, it is spreading to nearby plants",1,1,1,0,0,Bacterial Infection
+"water soaked dark spots on leaves, this started about a week ago",1,1,0,0,0,Bacterial Infection
+"black lesions after rain, it is spreading to nearby plants",1,1,0,0,0,Bacterial Infection
+"leaf spots with yellow halo, I noticed it after two days of rain",1,1,0,0,0,Bacterial Infection
+"leaves are curling and distorted with a light green mosaic pattern, this started about a week ago",0,0,0,1,0,Viral Infection
+"leaves are curling and distorted with a light green mosaic pattern and the plant is stunted and new leaves are small, it looks worse in the afternoon",0,0,0,1,1,Viral Infection
+"the new leaves are curled and the plant looks puckered, it is spreading to nearby plants",0,0,0,1,0,Viral Infection
+"the new leaves are curled and the plant looks puckered and the leaves look crinkled and rolled, around half of the field is affected",0,0,0,1,0,Viral Infection
+"the leaves are rolled and show a mosaic colour pattern, I noticed it after two days of rain",0,0,0,1,0,Viral Infection
+"the leaves are rolled and show a mosaic colour pattern and the plant is not growing and the leaves are cupped, the neighbouring field looks fine",0,1,0,1,1,Viral Infection
+"the plant has crinkled leaves with a green and light green mosaic, it looks worse in the afternoon",0,0,0,1,0,Viral Infection
+"the plant has crinkled leaves with a green and light green mosaic and the plant is stunted and new leaves are small, the same thing happened last season",0,0,0,1,1,Viral Infection
+"the new growth is twisted and the leaves are distorted, around half of the field is affected",0,0,0,1,0,Viral Infection
+"the new growth is twisted and the leaves are distorted and the leaves look crinkled and rolled, I have not sprayed anything yet",0,0,0,1,0,Viral Infection
+"leaf curling is visible and the surface looks wrinkled, the neighbouring field looks fine",0,1,0,1,0,Viral Infection
+"leaf curling is visible and the surface looks wrinkled and the plant is not growing and the leaves are cupped, the soil here is clay type",0,0,0,1,1,Viral Infection
+"the mosaic pattern of light and dark green is spreading to the whole plant, the same thing happened last season",1,0,0,1,0,Viral Infection
+"the mosaic pattern of light and dark green is spreading to the whole plant and the plant is stunted and new leaves are small, it is worse in the low lying part of the field",1,0,0,1,1,Viral Infection
+"curling of the new growth and stiff cupped leaves are visible, I have not sprayed anything yet",0,0,0,1,0,Viral Infection
+"curling of the new growth and stiff cupped leaves are visible and the leaves look crinkled and rolled, this started about a week ago",0,0,0,1,0,Viral Infection
+"the plant is dwarf and the foliage is mottled and distorted, the soil here is clay type",0,0,0,1,1,Viral Infection
+"the plant is dwarf and the foliage is mottled and distorted and the plant is not growing and the leaves are cupped, it is spreading to nearby plants",0,0,0,1,1,Viral Infection
+"leaves are curling and mosaic, this started about a week ago",0,0,0,1,0,Viral Infection
+"curled distorted new leaves, it is spreading to nearby plants",0,0,0,1,0,Viral Infection
+"mosaic pattern on leaves, I noticed it after two days of rain",0,0,0,1,0,Viral Infection
+"leaves are pale yellow with tiny speckles and fine webbing under the leaf, this started about a week ago",1,1,0,0,0,Pest Attack (mites / insects)
+"leaves are pale yellow with tiny speckles and fine webbing under the leaf and the plant is stunted and leaves are curled, it looks worse in the afternoon",1,1,0,1,1,Pest Attack (mites / insects)
+"the leaf surface looks silver with speckle damage and small mites, it is spreading to nearby plants",1,1,0,0,0,Pest Attack (mites / insects)
+"the leaf surface looks silver with speckle damage and small mites and there are small holes and insects on the leaves, around half of the field is affected",1,1,0,0,0,Pest Attack (mites / insects)
+"the underside of the leaves has webbing and tiny insects, I noticed it after two days of rain",0,1,0,0,0,Pest Attack (mites / insects)
+"the underside of the leaves has webbing and tiny insects and the leaves are curling with heavy speckle damage, the neighbouring field looks fine",0,1,0,1,0,Pest Attack (mites / insects)
+"the leaves are speckled and there are holes from the insects, it looks worse in the afternoon",0,1,0,0,0,Pest Attack (mites / insects)
+"the leaves are speckled and there are holes from the insects and the plant is stunted and leaves are curled, the same thing happened last season",0,1,0,1,1,Pest Attack (mites / insects)
+"the upper leaves have a patch of speckled damage and webbing, around half of the field is affected",0,1,0,0,0,Pest Attack (mites / insects)
+"the upper leaves have a patch of speckled damage and webbing and there are small holes and insects on the leaves, I have not sprayed anything yet",0,1,0,0,0,Pest Attack (mites / insects)
+"small mites are visible and the leaves are turning bronze, the neighbouring field looks fine",1,1,0,0,0,Pest Attack (mites / insects)
+"small mites are visible and the leaves are turning bronze and the leaves are curling with heavy speckle damage, the soil here is clay type",1,1,0,1,0,Pest Attack (mites / insects)
+"fine webbing and moving mites are visible under the leaves, the same thing happened last season",0,1,0,0,0,Pest Attack (mites / insects)
+"fine webbing and moving mites are visible under the leaves and the plant is stunted and leaves are curled, it is worse in the low lying part of the field",0,1,0,1,1,Pest Attack (mites / insects)
+"the leaves are speckled, silvery and many small insects are present, I have not sprayed anything yet",1,1,0,0,0,Pest Attack (mites / insects)
+"the leaves are speckled, silvery and many small insects are present and there are small holes and insects on the leaves, this started about a week ago",1,1,0,0,0,Pest Attack (mites / insects)
+"the underside of the leaves is dusty with speckle damage and webbing, the soil here is clay type",0,1,0,0,0,Pest Attack (mites / insects)
+"the underside of the leaves is dusty with speckle damage and webbing and the leaves are curling with heavy speckle damage, it is spreading to nearby plants",0,1,0,1,0,Pest Attack (mites / insects)
+"webbing under the leaves, this started about a week ago",0,1,0,0,0,Pest Attack (mites / insects)
+"speckled silvery leaves with mites, it is spreading to nearby plants",1,1,0,0,0,Pest Attack (mites / insects)
+"tiny insects and speckle damage, I noticed it after two days of rain",0,1,0,0,0,Pest Attack (mites / insects)
+"the plant is wilting and the leaves are drooping even after watering, this started about a week ago",0,1,1,0,0,Water Stress (over/under watering)
+"the plant is wilting and the leaves are drooping even after watering and the leaves turned yellow and fell off after waterlogging, it looks worse in the afternoon",1,1,1,0,0,Water Stress (over/under watering)
+"the leaves are limp and the plant is sagging in the morning, it is spreading to nearby plants",0,0,1,0,0,Water Stress (over/under watering)
+"the leaves are limp and the plant is sagging in the morning and the lower leaves are yellow and the plant is not growing, around half of the field is affected",1,0,1,0,1,Water Stress (over/under watering)
+"the lower leaves are yellow and falling after heavy watering, I noticed it after two days of rain",1,1,0,0,0,Water Stress (over/under watering)
+"the lower leaves are yellow and falling after heavy watering and the plant is drooping and growth has slowed down, the neighbouring field looks fine",1,1,1,0,0,Water Stress (over/under watering)
+"the plant is collapsed and the soil stays wet for days, it looks worse in the afternoon",0,0,1,0,0,Water Stress (over/under watering)
+"the plant is collapsed and the soil stays wet for days and the leaves turned yellow and fell off after waterlogging, the same thing happened last season",1,0,1,0,0,Water Stress (over/under watering)
+"the leaves are turning yellow with the plant sitting in water, around half of the field is affected",1,0,0,0,0,Water Stress (over/under watering)
+"the leaves are turning yellow with the plant sitting in water and the lower leaves are yellow and the plant is not growing, I have not sprayed anything yet",1,0,0,0,1,Water Stress (over/under watering)
+"the plant looks wilted and the leaves have turned yellow, the neighbouring field looks fine",1,1,1,0,0,Water Stress (over/under watering)
+"the plant looks wilted and the leaves have turned yellow and the plant is drooping and growth has slowed down, the soil here is clay type",1,0,1,0,0,Water Stress (over/under watering)
+"the plants are wilting while the soil is either dry or waterlogged, the same thing happened last season",0,0,1,0,0,Water Stress (over/under watering)
+"the plants are wilting while the soil is either dry or waterlogged and the leaves turned yellow and fell off after waterlogging, it is worse in the low lying part of the field",1,0,1,0,0,Water Stress (over/under watering)
+"the leaves are limp and the whole plant is drooping at midday, I have not sprayed anything yet",0,0,1,0,0,Water Stress (over/under watering)
+"the leaves are limp and the whole plant is drooping at midday and the lower leaves are yellow and the plant is not growing, this started about a week ago",1,0,1,0,1,Water Stress (over/under watering)
+"yellowing leaves dropped off after the field was waterlogged, the soil here is clay type",1,0,0,0,0,Water Stress (over/under watering)
+"yellowing leaves dropped off after the field was waterlogged and the plant is drooping and growth has slowed down, it is spreading to nearby plants",1,0,1,0,0,Water Stress (over/under watering)
+"plant wilting after watering, this started about a week ago",0,1,1,0,0,Water Stress (over/under watering)
+"leaves drooping and yellow, it is spreading to nearby plants",1,0,1,0,0,Water Stress (over/under watering)
+"yellow leaves after waterlogging, I noticed it after two days of rain",1,0,0,0,0,Water Stress (over/under watering)
+"the leaves are scorched and pale in the afternoon sun, this started about a week ago",1,0,0,0,0,Heat & Sunlight Stress
+"the leaves are scorched and pale in the afternoon sun and the plant is small and the leaves curl in strong sunlight, it looks worse in the afternoon",1,0,0,1,0,Heat & Sunlight Stress
+"leaf edges are dry and brown and the plant looks wilted at midday, it is spreading to nearby plants",1,0,1,0,0,Heat & Sunlight Stress
+"leaf edges are dry and brown and the plant looks wilted at midday and the leaves dry out and the plant looks tired at midday, around half of the field is affected",1,0,1,0,0,Heat & Sunlight Stress
+"the leaves are pale and burning in strong sunlight, I noticed it after two days of rain",1,0,0,0,0,Heat & Sunlight Stress
+"the leaves are pale and burning in strong sunlight and growth is slow and the leaves are pale, the neighbouring field looks fine",1,1,0,0,0,Heat & Sunlight Stress
+"the upper leaves are scorched and drying at noon, it looks worse in the afternoon",0,0,1,0,0,Heat & Sunlight Stress
+"the upper leaves are scorched and drying at noon and the plant is small and the leaves curl in strong sunlight, the same thing happened last season",0,0,1,1,0,Heat & Sunlight Stress
+"the plant is wilting in the hot part of the day, around half of the field is affected",0,0,1,0,0,Heat & Sunlight Stress
+"the plant is wilting in the hot part of the day and the leaves dry out and the plant looks tired at midday, I have not sprayed anything yet",0,0,1,0,0,Heat & Sunlight Stress
+"the leaves look bleached and dry where the sun is strongest, the neighbouring field looks fine",0,1,0,0,0,Heat & Sunlight Stress
+"the leaves look bleached and dry where the sun is strongest and growth is slow and the leaves are pale, the soil here is clay type",1,0,0,0,0,Heat & Sunlight Stress
+"the leaves are scorched and dry on the side facing the sun, the same thing happened last season",0,0,0,0,0,Heat & Sunlight Stress
+"the leaves are scorched and dry on the side facing the sun and the plant is small and the leaves curl in strong sunlight, it is worse in the low lying part of the field",0,0,0,1,0,Heat & Sunlight Stress
+"the foliage burns and the leaves dry up at noon, I have not sprayed anything yet",0,0,1,0,0,Heat & Sunlight Stress
+"the foliage burns and the leaves dry up at noon and the leaves dry out and the plant looks tired at midday, this started about a week ago",0,0,1,0,0,Heat & Sunlight Stress
+"the leaves curl and dry in strong sunlight, the shade side is fine, the soil here is clay type",0,0,0,1,0,Heat & Sunlight Stress
+"the leaves curl and dry in strong sunlight, the shade side is fine and growth is slow and the leaves are pale, it is spreading to nearby plants",1,0,0,1,0,Heat & Sunlight Stress
+"leaves are scorched and brown in the sun, this started about a week ago",1,0,0,0,0,Heat & Sunlight Stress
+"leaf edges are dry and brown from sunlight, it is spreading to nearby plants",1,0,0,0,0,Heat & Sunlight Stress
+"leaves are pale and burning at midday, I noticed it after two days of rain",1,0,0,0,0,Heat & Sunlight Stress
+"the leaves are a healthy even green colour and the plant is growing well, this started about a week ago",0,0,0,0,0,Healthy Crop
+"the leaves are a healthy even green colour and the plant is growing well and the crop is growing as expected, it looks worse in the afternoon",0,0,0,0,0,Healthy Crop
+"the crop looks normal, the leaves are firm and upright, it is spreading to nearby plants",0,0,0,0,0,Healthy Crop
+"the crop looks normal, the leaves are firm and upright and the plants look strong and upright, around half of the field is affected",0,0,0,0,0,Healthy Crop
+"growth is even and the foliage has a full green colour, I noticed it after two days of rain",0,0,0,0,0,Healthy Crop
+"growth is even and the foliage has a full green colour and growth is even across the field, the neighbouring field looks fine",0,1,0,0,0,Healthy Crop
+"the plants are tall and strong with full green leaves, it looks worse in the afternoon",0,0,0,0,0,Healthy Crop
+"the plants are tall and strong with full green leaves and the crop is growing as expected, the same thing happened last season",0,0,0,0,0,Healthy Crop
+"the field has uniform green plants with even growth, around half of the field is affected",0,0,0,0,0,Healthy Crop
+"the field has uniform green plants with even growth and the plants look strong and upright, I have not sprayed anything yet",0,0,0,0,0,Healthy Crop
+"the leaves are firm, upright and evenly green, the neighbouring field looks fine",0,1,0,0,0,Healthy Crop
+"the leaves are firm, upright and evenly green and growth is even across the field, the soil here is clay type",0,0,0,0,0,Healthy Crop
+"the foliage is evenly green and the plants are upright and strong, the same thing happened last season",0,0,0,0,0,Healthy Crop
+"the foliage is evenly green and the plants are upright and strong and the crop is growing as expected, it is worse in the low lying part of the field",0,0,0,0,0,Healthy Crop
+"the crop is uniform and growth is even across the field, I have not sprayed anything yet",0,0,0,0,0,Healthy Crop
+"the crop is uniform and growth is even across the field and the plants look strong and upright, this started about a week ago",0,0,0,0,0,Healthy Crop
+"the plants look strong with full green foliage, the soil here is clay type",0,0,0,0,0,Healthy Crop
+"the plants look strong with full green foliage and growth is even across the field, it is spreading to nearby plants",0,0,0,0,0,Healthy Crop
+"crop looks green and healthy, this started about a week ago",0,0,0,0,0,Healthy Crop
+"plants are strong and green, it is spreading to nearby plants",0,0,0,0,0,Healthy Crop
+"no problem, growth is even, I noticed it after two days of rain",0,0,0,0,0,Healthy Crop

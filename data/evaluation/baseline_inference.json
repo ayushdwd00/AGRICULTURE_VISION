@@ -1,0 +1,165 @@
+{
+  "weights": "mobilenetv2_plant.pth",
+  "images_tested": 6,
+  "images_with_known_label": 6,
+  "correct": 6,
+  "sample_accuracy": 1.0,
+  "results": [
+    {
+      "image": "sample_pepper_bacterial_spot.jpg",
+      "predicted": "Pepper,_bell___Bacterial_spot",
+      "confidence": 0.9992546439170837,
+      "expected": "Pepper,_bell___Bacterial_spot",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Pepper,_bell___Bacterial_spot",
+          "confidence": 0.9992546439170837,
+          "pretty_label": "Bell Pepper - Bacterial spot"
+        },
+        {
+          "label": "Peach___Bacterial_spot",
+          "confidence": 0.0006425606552511454,
+          "pretty_label": "Peach - Bacterial spot"
+        },
+        {
+          "label": "Pepper,_bell___healthy",
+          "confidence": 9.723551193019375e-05,
+          "pretty_label": "Bell Pepper - Healthy"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_pepper_bacterial_spot_gradcam.png"
+    },
+    {
+      "image": "sample_potato_late_blight.jpg",
+      "predicted": "Potato___Late_blight",
+      "confidence": 0.9999954700469971,
+      "expected": "Potato___Late_blight",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Potato___Late_blight",
+          "confidence": 0.9999954700469971,
+          "pretty_label": "Potato - Late blight"
+        },
+        {
+          "label": "Potato___Early_blight",
+          "confidence": 4.236413587932475e-06,
+          "pretty_label": "Potato - Early blight"
+        },
+        {
+          "label": "Blueberry___healthy",
+          "confidence": 1.30498179373717e-07,
+          "pretty_label": "Blueberry - Healthy"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_potato_late_blight_gradcam.png"
+    },
+    {
+      "image": "sample_tomato_early_blight.jpg",
+      "predicted": "Tomato___Early_blight",
+      "confidence": 0.8337073922157288,
+      "expected": "Tomato___Early_blight",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Tomato___Early_blight",
+          "confidence": 0.8337073922157288,
+          "pretty_label": "Tomato - Early blight"
+        },
+        {
+          "label": "Tomato___Septoria_leaf_spot",
+          "confidence": 0.08438633382320404,
+          "pretty_label": "Tomato - Septoria leaf spot"
+        },
+        {
+          "label": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+          "confidence": 0.036789532750844955,
+          "pretty_label": "Tomato - Tomato yellow leaf curl virus"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_tomato_early_blight_gradcam.png"
+    },
+    {
+      "image": "sample_tomato_healthy.jpg",
+      "predicted": "Tomato___healthy",
+      "confidence": 0.9995284080505371,
+      "expected": "Tomato___healthy",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Tomato___healthy",
+          "confidence": 0.9995284080505371,
+          "pretty_label": "Tomato - Healthy"
+        },
+        {
+          "label": "Tomato___Target_Spot",
+          "confidence": 0.00046191082219593227,
+          "pretty_label": "Tomato - Target spot"
+        },
+        {
+          "label": "Tomato___Spider_mites Two-spotted_spider_mite",
+          "confidence": 4.4976864046475384e-06,
+          "pretty_label": "Tomato - Two-spotted spider mite damage"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_tomato_healthy_gradcam.png"
+    },
+    {
+      "image": "sample_tomato_mosaic_virus.jpg",
+      "predicted": "Tomato___Tomato_mosaic_virus",
+      "confidence": 0.9744464755058289,
+      "expected": "Tomato___Tomato_mosaic_virus",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Tomato___Tomato_mosaic_virus",
+          "confidence": 0.9744464755058289,
+          "pretty_label": "Tomato - Tomato mosaic virus"
+        },
+        {
+          "label": "Tomato___Spider_mites Two-spotted_spider_mite",
+          "confidence": 0.024153772741556168,
+          "pretty_label": "Tomato - Two-spotted spider mite damage"
+        },
+        {
+          "label": "Tomato___Septoria_leaf_spot",
+          "confidence": 0.001269511878490448,
+          "pretty_label": "Tomato - Septoria leaf spot"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_tomato_mosaic_virus_gradcam.png"
+    },
+    {
+      "image": "sample_tomato_yellow_leaf_curl.jpg",
+      "predicted": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "confidence": 1.0,
+      "expected": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "match": true,
+      "top_predictions": [
+        {
+          "label": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+          "confidence": 1.0,
+          "pretty_label": "Tomato - Tomato yellow leaf curl virus"
+        },
+        {
+          "label": "Tomato___Bacterial_spot",
+          "confidence": 3.5882475657444957e-08,
+          "pretty_label": "Tomato - Bacterial spot"
+        },
+        {
+          "label": "Tomato___Leaf_Mold",
+          "confidence": 8.502096804363646e-10,
+          "pretty_label": "Tomato - Leaf mould"
+        }
+      ],
+      "weights": "mobilenetv2_plant.pth",
+      "gradcam": "C:\\Users\\ASUS\\OneDrive\\Desktop\\agri-vision\\data\\evaluation\\gradcam_samples\\sample_tomato_yellow_leaf_curl_gradcam.png"
+    }
+  ]
+}

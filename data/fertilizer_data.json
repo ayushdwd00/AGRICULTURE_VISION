@@ -1,0 +1,266 @@
+{
+  "meta": {
+    "module": "Module 4 - Fertilizer Calculator",
+    "nature": "Deterministic / rule-based lookup table. NOT machine learning, and Gemini is never used to invent quantities.",
+    "price_basis": "Indicative Indian retail prices (2025, INR) - MRP varies by state and dealer.",
+    "dosage_basis": "Indicative recommendation doses per acre of a standing crop. Real doses must follow the soil test report and the state agriculture department recommendation.",
+    "how_it_works": "quantity = dosage_per_acre x land_size_acres ; estimated_cost = quantity x cost_per_unit",
+    "safety_note": "Always split nitrogen doses and follow the label. Confirm with your local Krishi Vigyan Kendra / extension officer before applying."
+  },
+  "deficiency_order": [
+    "Nitrogen",
+    "Phosphorus",
+    "Potassium",
+    "Zinc",
+    "Sulphur",
+    "Boron",
+    "Calcium",
+    "Organic matter (FYM)"
+  ],
+  "crops": {
+    "Tomato": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 45,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split into 3 doses (basal, 30 days, 55 days after transplanting)."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 25,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Apply as basal dose at transplanting, 5 cm away from the stem."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 30,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Half as basal, half at first fruit set."
+      }
+    },
+    "Potato": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 55,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Half at planting, half at earthing up."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 30,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Full dose as basal at planting."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 35,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Half at planting, half at earthing up."
+      }
+    },
+    "Wheat": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 50,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Half at sowing, quarter at crown root initiation, quarter at tillering."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 22,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at sowing."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 16,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Basal dose at sowing."
+      }
+    },
+    "Rice (Paddy)": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 55,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split into 3 equal doses (basal, tillering, panicle initiation)."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 22,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at transplanting / sowing."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 20,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Half basal, half at panicle initiation."
+      }
+    },
+    "Maize": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 50,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split: 1/3 basal, 1/3 knee-high, 1/3 before tasselling."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 22,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at sowing."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 16,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Basal dose at sowing."
+      }
+    },
+    "Onion": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 45,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split into 3 doses; stop 30 days before harvest."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 25,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at transplanting."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 25,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Half basal, half at bulb initiation."
+      }
+    },
+    "Cotton": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 40,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split: basal, squaring and flowering stage."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 25,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at sowing."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 20,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Half basal, half at flowering."
+      }
+    },
+    "Mustard": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 35,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Half basal, half after the first irrigation."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 18,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose at sowing."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 13,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Basal dose at sowing."
+      }
+    },
+    "Sugarcane": {
+      "Nitrogen": {
+        "fertilizer": "Urea (46% N)",
+        "dosage_per_acre": 70,
+        "unit": "kg",
+        "cost_per_unit": 6.0,
+        "application": "Split: 1/3 basal, 1/3 at 45 days, 1/3 at 90 days."
+      },
+      "Phosphorus": {
+        "fertilizer": "DAP (18-46-0)",
+        "dosage_per_acre": 30,
+        "unit": "kg",
+        "cost_per_unit": 27.0,
+        "application": "Basal dose in the planting furrow."
+      },
+      "Potassium": {
+        "fertilizer": "Muriate of Potash / MOP (60% K2O)",
+        "dosage_per_acre": 30,
+        "unit": "kg",
+        "cost_per_unit": 34.0,
+        "application": "Basal dose together with phosphorus."
+      }
+    }
+  },
+  "common_deficiency_products": {
+    "Zinc": {
+      "fertilizer": "Zinc Sulphate (ZnSO4 21%)",
+      "dosage_per_acre": 10,
+      "unit": "kg",
+      "cost_per_unit": 60.0,
+      "application": "Soil application once every 2-3 years; 0.5% foliar spray for a quick correction."
+    },
+    "Sulphur": {
+      "fertilizer": "Bentonite / Elemental Sulphur (90% S)",
+      "dosage_per_acre": 8,
+      "unit": "kg",
+      "cost_per_unit": 25.0,
+      "application": "Apply with the basal dose and mix well with the soil."
+    },
+    "Boron": {
+      "fertilizer": "Borax (11% B)",
+      "dosage_per_acre": 4,
+      "unit": "kg",
+      "cost_per_unit": 120.0,
+      "application": "Enough for 2-3 seasons; do not overdose (boron toxicity is easy)."
+    },
+    "Calcium": {
+      "fertilizer": "Agricultural Lime / Gypsum",
+      "dosage_per_acre": 100,
+      "unit": "kg",
+      "cost_per_unit": 6.0,
+      "application": "Broadcast before ploughing: lime for acidic soil, gypsum for sodic soil."
+    },
+    "Organic matter (FYM)": {
+      "fertilizer": "Well rotted Farm Yard Manure",
+      "dosage_per_acre": 2000,
+      "unit": "kg",
+      "cost_per_unit": 1.5,
+      "application": "Broadcast and incorporate 3-4 weeks before sowing."
+    }
+  }
+}

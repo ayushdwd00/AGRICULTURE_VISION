@@ -1,0 +1,20 @@
+AgriVision - Streamlit page smoke check
+============================================================
+[PASS] 🏠 Dashboard
+        rendered heading: <div class="agv-hero"><h1>🌾 AgriVision Dashboard</h1><p>One screen for crop heal
+[PASS] 🩺 Crop Doctor
+        rendered heading: <div class="agv-hero"><h1>🩺 Crop Doctor</h1><p>Upload a leaf photo and/or descri
+[PASS] 🌦️ Weather & Risk
+        rendered heading: <div class="agv-hero"><h1>🌦️ Weather & Crop Risk</h1><p>Enter a city to fetch th
+[PASS] 🧮 Fertilizer Calculator
+        rendered heading: <div class="agv-hero"><h1>🧮 Fertilizer Calculator</h1><p>Pick your crop and the 
+[PASS] 🔐 Product Verifier
+        rendered heading: <div class="agv-hero"><h1>🔐 Product Verifier</h1><p>Check an agricultural produc
+[PASS] 🏛️ Government Schemes
+        rendered heading: <div class="agv-hero"><h1>🏛️ Government Schemes</h1><p>A four-step wizard matche
+[PASS] 🚜 Equipment Rental
+        rendered heading: <div class="agv-hero"><h1>🚜 Equipment Rental</h1><p>List, view and book agricult
+[PASS] 🤖 AI Agriculture Assistant
+        rendered heading: <div class="agv-hero"><h1>🤖 AI Agriculture Assistant</h1><p>Ask general agricult
+============================================================
+pages checked: 8 | failures: 0

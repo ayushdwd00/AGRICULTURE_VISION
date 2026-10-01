@@ -1,0 +1,208 @@
+{
+  "meta": {
+    "module": "Module 6 - Government Scheme Matcher",
+    "nature": "Static matching over publicly available central-sector agricultural schemes. No ML, no LLM - the app never invents a scheme or an application link.",
+    "source_note": "Descriptions and eligibility summaries are written from the official scheme portals listed in 'official_link'. Rules and crop coverage can change, so always confirm on the official portal before applying.",
+    "categories": [
+      "income-support",
+      "insurance",
+      "credit",
+      "soil-health",
+      "irrigation",
+      "organic",
+      "horticulture",
+      "infrastructure"
+    ],
+    "crop_groups": {
+      "Cereals": ["Wheat", "Rice (Paddy)", "Maize"],
+      "Pulses": ["Pulses"],
+      "Oilseeds": ["Mustard", "Groundnut"],
+      "Vegetables": ["Tomato", "Potato", "Onion", "Chilli"],
+      "Fruits": ["Mango", "Banana", "Guava", "Citrus"],
+      "Fibre / Cash crops": ["Cotton", "Sugarcane"]
+    }
+  },
+  "schemes": [
+    {
+      "id": "pm-kisan",
+      "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+      "category": "income-support",
+      "description": "Direct income support of INR 6,000 per year paid in three equal instalments to eligible landholding farmer families.",
+      "benefit": "INR 6,000 per year as direct benefit transfer (DBT) into the farmer's bank account.",
+      "eligibility": [
+        "Landholding farmer family with cultivable land in the farmer's name",
+        "Institutional landholders and income-tax payers are excluded",
+        "Aadhaar linked bank account is required for the instalment transfer"
+      ],
+      "land_size_min_acres": 0.01,
+      "land_size_max_acres": 5.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card",
+        "Land ownership records (khatauni / 7-12 extract / RoR)",
+        "Bank passbook (Aadhaar linked)",
+        "Mobile number"
+      ],
+      "official_link": "https://pmkisan.gov.in/"
+    },
+    {
+      "id": "pmfby",
+      "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+      "category": "insurance",
+      "description": "Crop insurance against yield loss due to natural calamities, pests and diseases, at a low fixed premium for the farmer.",
+      "benefit": "Claim payout for prevented sowing, standing crop loss and post-harvest losses; premium capped at 2% for kharif, 1.5% for rabi and 5% for commercial / horticultural crops.",
+      "eligibility": [
+        "All farmers growing notified crops in notified areas, including tenant farmers and sharecroppers with valid documents",
+        "Enrolment through the bank (loanee farmers) or the PMFBY portal / CSC (non-loanee farmers)",
+        "Enrolment before the cut-off date of the season"
+      ],
+      "land_size_min_acres": 0.01,
+      "land_size_max_acres": 2000.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card",
+        "Bank account details",
+        "Sowing certificate / land record",
+        "Crop sown and area details"
+      ],
+      "official_link": "https://pmfby.gov.in/"
+    },
+    {
+      "id": "kcc",
+      "name": "Kisan Credit Card (KCC)",
+      "category": "credit",
+      "description": "Short-term credit for crop cultivation, allied activities such as dairy and fisheries, and household needs linked to the farm.",
+      "benefit": "Credit limit at a subsidised interest rate with interest subvention for prompt repayment; covers crop inputs and maintenance needs.",
+      "eligibility": [
+        "Farmers with cultivable land (owner cultivators, tenant farmers, oral lessees, sharecroppers)",
+        "Self-help groups and joint liability groups of farmers",
+        "Allied activity borrowers (poultry, dairy, fisheries)"
+      ],
+      "land_size_min_acres": 0.01,
+      "land_size_max_acres": 2000.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card and PAN",
+        "Land documents",
+        "Recent passport size photograph",
+        "Bank account details"
+      ],
+      "official_link": "https://www.myscheme.gov.in/schemes/kcc"
+    },
+    {
+      "id": "soil-health-card",
+      "name": "Soil Health Card Scheme",
+      "category": "soil-health",
+      "description": "Gives every farmer a soil health card with the nutrient status of their field and crop-wise fertiliser recommendations every two years.",
+      "benefit": "Laboratory soil test covering pH, electrical conductivity, organic carbon and available N, P, K, S and micronutrients, plus crop-wise nutrient recommendations.",
+      "eligibility": [
+        "All farmers with agricultural land (soil samples collected through the state agriculture department)",
+        "Samples are normally collected once every two years for the same plot"
+      ],
+      "land_size_min_acres": 0.01,
+      "land_size_max_acres": 2000.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card",
+        "Land survey number / plot details",
+        "Mobile number"
+      ],
+      "official_link": "https://soilhealth.dac.gov.in/"
+    },
+    {
+      "id": "pmksy-per-drop-more-crop",
+      "name": "Pradhan Mantri Krishi Sinchayee Yojana - Per Drop More Crop",
+      "category": "irrigation",
+      "description": "Subsidy for micro-irrigation (drip and sprinkler systems) to improve water use efficiency on the farm.",
+      "benefit": "Financial assistance (typically 45-55% of the system cost depending on the state and farmer category) for drip / sprinkler installation.",
+      "eligibility": [
+        "Farmers with a reliable water source and an approved micro-irrigation design",
+        "Applications through the state agriculture / horticulture department or the state portal",
+        "Small, marginal and other farmers are eligible at different assistance rates"
+      ],
+      "land_size_min_acres": 0.25,
+      "land_size_max_acres": 12.5,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card",
+        "Land records",
+        "Water source declaration",
+        "Bank account details"
+      ],
+      "official_link": "https://pmksy.gov.in/"
+    },
+    {
+      "id": "pkvy-organic",
+      "name": "Paramparagat Krishi Vikas Yojana (PKVY) - Organic Farming",
+      "category": "organic",
+      "description": "Promotes cluster based organic farming with training, certification support and assistance for on-farm inputs.",
+      "benefit": "Assistance per hectare over the conversion cycle, free training and PGS-India organic certification support for the cluster.",
+      "eligibility": [
+        "Farmers willing to join an organic cluster (cluster approach through the state)",
+        "Fields must be free of prohibited chemical inputs during the conversion period",
+        "Registration under PGS-India for participatory certification"
+      ],
+      "land_size_min_acres": 0.1,
+      "land_size_max_acres": 30.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card",
+        "Land records",
+        "Cluster registration form from the state agriculture department"
+      ],
+      "official_link": "https://pgsindia-ncof.gov.in/"
+    },
+    {
+      "id": "midh-horticulture",
+      "name": "Mission for Integrated Development of Horticulture (MIDH)",
+      "category": "horticulture",
+      "description": "Support for horticulture development: planting material, protected cultivation (polyhouse / shade net), cold storage and post-harvest infrastructure.",
+      "benefit": "Assistance for nurseries, protected cultivation, drip with mulch, precision farming and post-harvest management projects.",
+      "eligibility": [
+        "Farmers growing fruits, vegetables, flowers, spices, coconut or other horticultural crops",
+        "Projects submitted through the state horticulture mission",
+        "Individual farmers, FPOs and cooperatives can apply"
+      ],
+      "land_size_min_acres": 0.1,
+      "land_size_max_acres": 200.0,
+      "region": "All India",
+      "crop_type": ["Vegetables", "Fruits", "Any horticultural crop"],
+      "required_documents": [
+        "Aadhaar card",
+        "Land records",
+        "Project proposal / quotation from an approved supplier",
+        "Bank account details"
+      ],
+      "official_link": "https://midh.gov.in/"
+    },
+    {
+      "id": "aif-infrastructure",
+      "name": "Agriculture Infrastructure Fund (AIF)",
+      "category": "infrastructure",
+      "description": "Medium to long term debt financing with interest subvention for post-harvest management and community farming assets.",
+      "benefit": "Loan with 3% interest subvention up to INR 2 crore and credit guarantee cover for eligible projects (warehouses, cold storage, grading units).",
+      "eligibility": [
+        "Farmers, FPOs, PACS, agri-entrepreneurs and start-ups with a viable post-harvest project",
+        "Project financed by a scheduled bank / cooperative / NBFC under the scheme",
+        "Application through the AIF portal"
+      ],
+      "land_size_min_acres": 0.1,
+      "land_size_max_acres": 2000.0,
+      "region": "All India",
+      "crop_type": ["Any"],
+      "required_documents": [
+        "Aadhaar card / entity registration",
+        "Project report and cost estimate",
+        "Land documents for the project site",
+        "Bank sanction letter (after appraisal)"
+      ],
+      "official_link": "https://agriinfra.dac.gov.in/"
+    }
+  ]
+}
