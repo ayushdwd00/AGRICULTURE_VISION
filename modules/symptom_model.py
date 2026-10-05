@@ -337,41 +337,77 @@ def train_symptom_model(
 
 # Inference
 
-@functools.lru_cache(maxsize=2)
+import threading
+
+_SYMPTOM_LOCK = threading.Lock()
+_LOADED_SYMPTOM_MODELS: Dict[str, Dict[str, Any]] = {}
+
+def is_symptom_model_loaded(model_path: Optional[str] = None) -> bool:
+    """Check if the symptom model is currently loaded in memory without loading it."""
+    target = str(Path(model_path or SYMPTOM_MODEL_PATH).resolve())
+    return target in _LOADED_SYMPTOM_MODELS
+
+def clear_symptom_model_cache() -> None:
+    """Clear cached symptom model instances."""
+    with _SYMPTOM_LOCK:
+        _LOADED_SYMPTOM_MODELS.clear()
+        import gc
+        gc.collect()
+
 def load_symptom_model(model_path: str = str(SYMPTOM_MODEL_PATH)) -> Dict[str, Any]:
-    """Load (and cache) the pickled symptom model payload."""
+    """Load (and cache) the pickled symptom model payload with thread safety."""
+    import gc
     import joblib
 
-    path = Path(model_path)
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Symptom model not found: {path}. "
-            "Run: python training/build_symptom_dataset.py && python training/train_symptom_model.py"
-        )
-    payload = joblib.load(path)
-    if not isinstance(payload, dict) or "pipeline" not in payload:
-        raise ValueError(f"{path.name} does not look like an AgriVision symptom model.")
-    return payload
+    resolved = str(Path(model_path).resolve())
+    if resolved in _LOADED_SYMPTOM_MODELS:
+        return _LOADED_SYMPTOM_MODELS[resolved]
+
+    with _SYMPTOM_LOCK:
+        if resolved in _LOADED_SYMPTOM_MODELS:
+            return _LOADED_SYMPTOM_MODELS[resolved]
+
+        path = Path(resolved)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Symptom model not found: {path}. "
+                "Run: python training/build_symptom_dataset.py && python training/train_symptom_model.py"
+            )
+        payload = joblib.load(path)
+        if not isinstance(payload, dict) or "pipeline" not in payload:
+            raise ValueError(f"{path.name} does not look like an AgriVision symptom model.")
+        _LOADED_SYMPTOM_MODELS[resolved] = payload
+        gc.collect()
+        return payload
+
+load_symptom_model.cache_clear = clear_symptom_model_cache
 
 def symptom_model_status() -> Dict[str, Any]:
-    """Status dictionary for the UI / dashboard."""
-    payload: Dict[str, Any]
-    try:
-        payload = load_symptom_model()
-        available = True
-        error = None
-    except (FileNotFoundError, ValueError) as exc:
-        payload = {}
-        available = False
-        error = str(exc)
+    """Status dictionary for the UI / dashboard without triggering model loading."""
+    resolved = str(Path(SYMPTOM_MODEL_PATH).resolve())
+    if resolved in _LOADED_SYMPTOM_MODELS:
+        payload = _LOADED_SYMPTOM_MODELS[resolved]
+        return {
+            "available": True,
+            "loaded": True,
+            "path": str(SYMPTOM_MODEL_PATH),
+            "labels": payload.get("labels", SYMPTOM_LABELS),
+            "accuracy": payload.get("accuracy"),
+            "trained_at": payload.get("trained_at"),
+            "n_rows": payload.get("n_rows"),
+            "error": None,
+        }
+
+    exists = SYMPTOM_MODEL_PATH.exists()
     return {
-        "available": available,
+        "available": exists,
+        "loaded": False,
         "path": str(SYMPTOM_MODEL_PATH),
-        "labels": payload.get("labels", SYMPTOM_LABELS),
-        "accuracy": payload.get("accuracy"),
-        "trained_at": payload.get("trained_at"),
-        "n_rows": payload.get("n_rows"),
-        "error": error,
+        "labels": SYMPTOM_LABELS,
+        "accuracy": None,
+        "trained_at": None,
+        "n_rows": None,
+        "error": None if exists else f"Symptom model not found: {SYMPTOM_MODEL_PATH}",
     }
 
 def _symptom_error(message: str) -> Dict[str, Any]:

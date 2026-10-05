@@ -59,9 +59,18 @@ WEIGHTS_LABELS: Dict[str, str] = {
 
 # Model construction / loading
 
+import threading
+
+_MODEL_LOCK = threading.Lock()
+_LOADED_MODELS: Dict[Tuple[str, str], nn.Module] = {}
+
 def get_device() -> torch.device:
     """CUDA when available, otherwise CPU (this project is CPU friendly)."""
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.get_num_threads() > 2:
+        torch.set_num_threads(2)
+    return torch.device("cpu")
 
 def build_model(num_classes: int = NUM_CLASSES, imagenet_backbone: bool = False) -> nn.Module:
     """
@@ -106,6 +115,10 @@ def load_checkpoint_into_model(model: nn.Module, weights_path: Path) -> nn.Modul
     checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
     state_dict = extract_state_dict(checkpoint)
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    del checkpoint
+    del state_dict
+    import gc
+    gc.collect()
     if missing:
         raise ValueError(
             f"{weights_path.name} does not match the AgriVision architecture "
@@ -125,6 +138,13 @@ def available_weights() -> Dict[str, Path]:
             found[path.name] = path
     return found
 
+def is_model_loaded(weights_path: Optional[str] = None) -> bool:
+    """Check whether a vision model is currently loaded in memory without loading it."""
+    if weights_path is not None:
+        resolved = str(Path(weights_path).resolve())
+        return any(k[0] == resolved for k in _LOADED_MODELS)
+    return len(_LOADED_MODELS) > 0
+
 def model_status() -> Dict[str, Any]:
     """Small status dictionary used by the Dashboard and by error messages."""
     weights = available_weights()
@@ -136,6 +156,7 @@ def model_status() -> Dict[str, Any]:
         "active": FINE_TUNED_MODEL_PATH.name if fine_tuned else (
             PRETRAINED_MODEL_PATH.name if PRETRAINED_MODEL_PATH.exists() else None
         ),
+        "loaded": is_model_loaded(),
         "class_names_path": str(CLASS_NAMES_PATH),
         "num_classes": len(load_class_names()),
         "device": str(get_device()),
@@ -177,21 +198,41 @@ def preprocess_image(
 
 # Cached model access
 
-@functools.lru_cache(maxsize=4)
+def clear_crop_doctor_cache() -> None:
+    """Clear loaded vision model cache."""
+    with _MODEL_LOCK:
+        _LOADED_MODELS.clear()
+        import gc
+        gc.collect()
+
 def load_model(weights_path: str, device_name: str = "cpu") -> nn.Module:
     """
     Load (and cache) a checkpoint. Parameters get ``requires_grad = False`` -
     AgriVision only performs inference here; gradients are still available for
     Grad-CAM because the *input* tensor carries the graph.
+
+    Thread-safe double-checked singleton caching ensures only one model instance
+    is created even under concurrent requests.
     """
-    model = build_model(NUM_CLASSES)
-    load_checkpoint_into_model(model, Path(weights_path))
-    device = torch.device(device_name)
-    model.to(device)
-    model.eval()
-    for parameter in model.parameters():
-        parameter.requires_grad = False
-    return model
+    cache_key = (str(Path(weights_path).resolve()), device_name)
+    if cache_key in _LOADED_MODELS:
+        return _LOADED_MODELS[cache_key]
+
+    with _MODEL_LOCK:
+        if cache_key in _LOADED_MODELS:
+            return _LOADED_MODELS[cache_key]
+
+        model = build_model(NUM_CLASSES)
+        load_checkpoint_into_model(model, Path(weights_path))
+        device = torch.device(device_name)
+        model.to(device)
+        model.eval()
+        for parameter in model.parameters():
+            parameter.requires_grad = False
+        _LOADED_MODELS[cache_key] = model
+        return model
+
+load_model.cache_clear = clear_crop_doctor_cache
 
 def get_model(
     prefer_fine_tuned: bool = True, weights_name: Optional[str] = None

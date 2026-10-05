@@ -93,27 +93,29 @@ class BookingRequest(BaseModel):
     notes: str = Field(default="", max_length=2_000)
 
 
-def _preload_runtime() -> Dict[str, Optional[str]]:
-    """Warm existing module caches once at startup, without making startup fragile."""
+def _check_model_availability() -> Dict[str, Optional[str]]:
+    """Verify model files exist on disk at startup without loading them into memory."""
     issues: Dict[str, Optional[str]] = {"crop_model": None, "symptom_model": None}
     try:
-        crop_doctor.get_model()
+        status = crop_doctor.model_status()
+        if not status.get("active"):
+            issues["crop_model"] = "No vision model weights found in 'models/'"
     except Exception as exc:
-        issues["crop_model"] = f"{type(exc).__name__}: model is unavailable"
-        logger.info("Crop model was not loaded at startup (%s)", type(exc).__name__)
+        issues["crop_model"] = f"{type(exc).__name__}: model status check failed"
+        logger.warning("Crop model status check failed: %s", exc)
     try:
-        from modules.symptom_model import load_symptom_model
-
-        load_symptom_model()
+        s_status = symptom_model_status()
+        if not s_status.get("available"):
+            issues["symptom_model"] = "Symptom model file not found in 'models/'"
     except Exception as exc:
-        issues["symptom_model"] = f"{type(exc).__name__}: model is unavailable"
-        logger.info("Symptom model was not loaded at startup (%s)", type(exc).__name__)
+        issues["symptom_model"] = f"{type(exc).__name__}: symptom status check failed"
+        logger.warning("Symptom model status check failed: %s", exc)
     return issues
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.model_load_issues = _preload_runtime()
+    app.state.model_load_issues = _check_model_availability()
     try:
         init_products_db()
         init_rental_db()
@@ -258,9 +260,19 @@ def health():
         "status": "ok" if ready else "degraded",
         "service": "agrivision-api",
         "features": {
-            "crop_diagnosis": {"available": bool(vision["active"]), "model": vision["active"]},
-            "symptom_analysis": {"available": symptoms["available"]},
-            "gradcam": {"available": bool(vision["active"])},
+            "crop_diagnosis": {
+                "available": bool(vision["active"]),
+                "model": vision["active"],
+                "loaded": bool(vision.get("loaded", False)),
+            },
+            "symptom_analysis": {
+                "available": symptoms["available"],
+                "loaded": bool(symptoms.get("loaded", False)),
+            },
+            "gradcam": {
+                "available": bool(vision["active"]),
+                "loaded": bool(vision.get("loaded", False)),
+            },
             "weather": {"available": True, "live_configured": weather_status()["configured"]},
             "fertilizer": {"available": fertilizer_available},
             "product_verification": {"available": product_db.get("available", False)},
@@ -326,7 +338,8 @@ def gradcam(
     pil_image = _validated_image(_read_upload(image))
     if not is_probably_leaf_image(pil_image):
         logger.info("Grad-CAM requested for an image that may not show a leaf")
-    result = crop_doctor.gradcam_for_image(pil_image, target_label=target_label, alpha=alpha)
+    alpha_val = float(getattr(alpha, "default", alpha))
+    result = crop_doctor.gradcam_for_image(pil_image, target_label=target_label, alpha=alpha_val)
     if result.get("error"):
         raise HTTPException(503, _scrub(str(result["error"])))
     images = {}

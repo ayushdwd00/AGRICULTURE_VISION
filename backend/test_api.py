@@ -120,3 +120,44 @@ def test_rental_auth_machine_crud_and_booking_overlap():
             execute(RENTAL_DB_PATH, "DELETE FROM users WHERE id = ?", (owner_id,))
         if farmer_id:
             execute(RENTAL_DB_PATH, "DELETE FROM users WHERE id = ?", (farmer_id,))
+
+
+def test_lazy_model_loading_behavior():
+    import io
+    from PIL import Image
+    from modules.crop_doctor import clear_crop_doctor_cache, is_model_loaded
+    from modules.symptom_model import clear_symptom_model_cache, is_symptom_model_loaded
+
+    clear_crop_doctor_cache()
+    clear_symptom_model_cache()
+
+    # 1. Health check must not trigger model loading
+    health = client.get("/api/health").json()
+    assert health["status"] == "ok"
+    assert health["features"]["crop_diagnosis"]["loaded"] is False
+    assert health["features"]["symptom_analysis"]["loaded"] is False
+    assert not is_model_loaded()
+    assert not is_symptom_model_loaded()
+
+    # 2. Symptom prediction loads only symptom model
+    sym_res = client.post("/api/symptoms/predict", json={"text": "yellow leaves with brown spots"})
+    assert sym_res.status_code == 200
+    assert is_symptom_model_loaded()
+    assert not is_model_loaded()
+
+    # 3. Crop diagnosis loads vision model
+    img = Image.new("RGB", (224, 224), color=(34, 139, 34))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    files = {"image": ("leaf.jpg", buf.getvalue(), "image/jpeg")}
+    diag_res = client.post("/api/crop/diagnose", files=files)
+    assert diag_res.status_code == 200
+    assert is_model_loaded()
+
+    # 4. Grad-CAM reuses vision model
+    buf.seek(0)
+    files_cam = {"image": ("leaf.jpg", buf.getvalue(), "image/jpeg")}
+    cam_res = client.post("/api/crop/gradcam", files=files_cam)
+    assert cam_res.status_code == 200
+    assert "images" in cam_res.json()
+
