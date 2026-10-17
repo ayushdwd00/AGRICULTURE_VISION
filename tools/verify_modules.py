@@ -64,26 +64,6 @@ from modules.subsidy_matcher import match_schemes
 schemes = match_schemes(2.5, "Uttar Pradesh", "Tomato", "Any")
 log("M5 match_schemes", f"matches={len(schemes['matches'])} near={len(schemes['near_misses'])}")
 
-# Equipment rental: auth, listings, overlap-safe booking
-from datetime import date, timedelta
-
-from modules.equipment_rental import (
-    cancel_booking,
-    create_booking,
-    list_machines,
-    login_user,
-)
-
-user = login_user("farmer_demo", "farmer123")
-machines = list_machines()
-start = (date.today() + timedelta(days=3)).isoformat()
-end = (date.today() + timedelta(days=5)).isoformat()
-booking = create_booking(int(machines[-1]["id"]), int(user["user"]["id"]), start, end, "verify run")
-clash = create_booking(int(machines[-1]["id"]), int(user["user"]["id"]), start, end, "verify run")
-if booking["ok"]:
-    cancel_booking(int(booking["booking_id"]), int(user["user"]["id"]))
-log("M6 rental", f"machines={len(machines)} login={user['ok']} booking_ok={booking['ok']} "
-                 f"clash_prevented={not clash['ok']}")
 
 Path("data/evaluation/final_integration_check.txt").write_text("\n".join(LINES) + "\n", encoding="utf-8")
 print("\n[ok] written data/evaluation/final_integration_check.txt")

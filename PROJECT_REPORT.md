@@ -33,8 +33,7 @@ React + TypeScript frontend (frontend/)
                     |
                     +---- modules/  (existing feature logic)
                     |       crop_doctor.py     symptom_model.py   weather.py
-                    |       fertilizer.py      product_verifier.py
-                    |       subsidy_matcher.py equipment_rental.py
+                    |       fertilizer.py      product_verifier.py subsidy_matcher.py
                     +---- utils/ (Gemini, Grad-CAM, databases, helpers)
                     +---- data/ + models/ (existing datasets, SQLite, checkpoints)
 
@@ -354,29 +353,6 @@ Verified with several profiles, e.g. 2.5 acres / Uttar Pradesh / Tomato / Any �
 matches; 0.2 acre / irrigation → 7 matches + 1 near-miss (“Requires between 0.25
 and 12.5 acres”). Gemini is not involved, so no scheme or link can be invented.
 
----
-
-## 8. Module 7 — Equipment Rental (SQLite MVP)
-
-* **Roles:** `farmer` (browse + book) and `owner` (CRUD on their own machines).
-* **Authentication:** username + **PBKDF2-SHA256 salted hash** (120 000 iterations,
-  stdlib `hashlib`/`hmac`, constant-time compare) stored in `data/rentals.db`;
-  session state keeps the logged-in user; two demo accounts are seeded
-  (`farmer_demo/farmer123`, `owner_demo/owner123`).
-* **Machine CRUD:** create (name, type, hourly rate, daily rate, location,
-  description), read (with location/type/owner filters), update and delete —
-  update/delete are refused for anyone who is not the owner.
-* **Bookings:** inclusive date range, `days = (end − start) + 1`,
-  `cost = days × daily_rate`; **overlap prevention** with the SQL condition
-  `existing.start <= requested.end AND requested.start <= existing.end`
-  restricted to non-cancelled bookings; past start dates are rejected.
-* Verified end-to-end: booking a machine for 3 days → ₹6,600; an identical request
-  and an edge-overlapping request are both rejected with the clashing dates named;
-  after cancelling, the same dates can be booked again; deleting the machine
-  removes its bookings.
-* Out of scope by design: payments and reviews.
-
----
 
 ## 9. Dashboard, navigation and session state
 
@@ -412,7 +388,6 @@ and 12.5 acres”). Gemini is not involved, so no scheme or link can be invented
 | 4 Fertilizer | static per-acre lookup + arithmetic |
 | 5 Product Verifier | SQLite registry lookup (+ OpenCV QR decode) |
 | 6 Government Schemes | static JSON rule matching, 4-step wizard |
-| 7 Equipment Rental | SQLite CRUD, PBKDF2 auth, overlap-checked bookings |
 
 > **AgriVision's vision model is not trained from scratch.** It starts from a
 > pretrained MobileNetV2 plant-disease model (already fine-tuned by its author on
@@ -441,8 +416,8 @@ verified by *running* it:
    (predictions, parsing, rule engine, lookups, matching, bookings) before wiring it
    to the UI.
 7. **UI (headless)** — `python tools/verify_pages.py` runs every page through
-   `streamlit.testing.v1.AppTest`: **8/8 pages PASS, 0 failures**; the Crop Doctor,
-   Weather, Product, Scheme, Rental and Assistant pages were also driven through
+   `streamlit.testing.v1.AppTest`: all active pages PASS, 0 failures; the Crop Doctor,
+   Weather, Product, Scheme and Assistant pages were also driven through
    real widget clicks/inputs to confirm that results appear.
 8. **Regression fixes found by that testing** — Streamlit forbids writing to a
    *widget* key after the widget exists, so the QR-decode and “Clear inputs”
@@ -508,8 +483,7 @@ MobileNetV2 plant-disease model is fine-tuned** (not trained from scratch) on an
 additional dataset, evaluated before/after with confusion matrices and reports,
 explained with **Grad-CAM**, fused with a **Random Forest symptom classifier**
 under an explicit `min(confidence) ≥ 0.70` rule, and narrated by **Gemini** with
-guard rails. Around that core AI module sit five supporting modules —
+guard rails. Around that core AI module sit four supporting modules —
 weather-risk rules, a deterministic fertilizer calculator,
-a SQLite product registry, a static government-scheme matcher and an
-overlap-safe equipment rental marketplace — all inside a single **Streamlit** app
+a SQLite product registry, and a static government-scheme matcher — all inside a single **Streamlit** app
 that degrades gracefully whenever a model, key, binary or network is unavailable.

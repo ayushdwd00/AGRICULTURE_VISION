@@ -41,7 +41,6 @@ PAGES: List[str] = [
     "🧮 Fertilizer Calculator",
     "🔐 Product Verifier",
     "🏛️ Government Schemes",
-    "🚜 Equipment Rental",
     "🤖 AI Agriculture Assistant",
 ]
 
@@ -61,7 +60,6 @@ SESSION_DEFAULTS: Dict[str, Any] = {
     "weather_result": None,
     "weather_city": "",
     "user": None,
-    "rental_selected_machine": None,
     "assistant_history": [],
 }
 
@@ -772,7 +770,6 @@ def dashboard_page() -> None:
             "- 🧮 **Fertilizer Calculator** - deterministic per-acre lookup\n"
             "- 🔐 **Product Verifier** - SQLite product registry\n"
             "- 🏛️ **Government Schemes** - static scheme matching wizard\n"
-            "- 🚜 **Equipment Rental** - SQLite listings and bookings\n"
             "- 🤖 **AI Assistant** - Gemini chat with AgriVision context"
         )
         st.caption(
@@ -1306,323 +1303,6 @@ def schemes_page() -> None:
         "your block agriculture office."
     )
 
-def equipment_rental_page() -> None:
-    """🚜 Equipment Rental - SQLite marketplace with two roles (farmer / owner)."""
-    page_header(
-        "Equipment Rental",
-        "List, view and book agricultural machines. Farmers book machines; machine owners manage "
-        "their listings.",
-        icon="🚜",
-    )
-
-    from modules.equipment_rental import (
-        MACHINE_TYPES,
-        ROLES,
-        add_machine,
-        bookings_for_farmer,
-        bookings_for_machine,
-        bookings_for_owner,
-        cancel_booking,
-        create_booking,
-        delete_machine,
-        estimate_cost,
-        list_machines,
-        login_user,
-        marketplace_status,
-        register_user,
-        update_machine,
-    )
-
-    status = marketplace_status()
-    columns = st.columns(4)
-    with columns[0]:
-        status_chip("Users", str(status.get("users", 0)), "info")
-    with columns[1]:
-        status_chip("Machines listed", str(status.get("machines", 0)), "info")
-    with columns[2]:
-        status_chip("Bookings", str(status.get("bookings", 0)), "info")
-    user = st.session_state.get("user")
-    with columns[3]:
-        status_chip(
-            "Signed in as",
-            f"{user['username']} ({ROLES.get(user['role'], user['role'])})" if user else "not signed in",
-            "good" if user else "warn",
-        )
-
-    if not user:
-        login_tab, register_tab = st.tabs(["🔑 Sign in", "🆕 Create account"])
-        with login_tab:
-            st.caption("Demo accounts: farmer_demo / farmer123 and owner_demo / owner123")
-            with st.form("login_form"):
-                username = st.text_input("Username", value="farmer_demo")
-                password = st.text_input("Password", value="farmer123", type="password")
-                role_hint = st.selectbox("I am a", list(ROLES.values()))
-                if st.form_submit_button("Sign in", type="primary"):
-                    result = login_user(username, password)
-                    if result["ok"]:
-                        st.session_state["user"] = result["user"]
-                        st.rerun()
-                    else:
-                        st.error(result["error"])
-                else:
-                    st.caption(
-                        f"Role selected for display only: {role_hint}. The role stored on the "
-                        "account is what decides your permissions."
-                    )
-        with register_tab:
-            with st.form("register_form"):
-                new_username = st.text_input("Choose a username")
-                new_password = st.text_input("Choose a password (min 6 characters)", type="password")
-                new_role = st.selectbox("I am a", ["farmer", "owner"], format_func=lambda r: ROLES[r])
-                full_name = st.text_input("Full name")
-                phone = st.text_input("Phone")
-                place = st.text_input("Village / city")
-                if st.form_submit_button("Create account", type="primary"):
-                    result = register_user(
-                        new_username, new_password, new_role, full_name, phone, place
-                    )
-                    if result["ok"]:
-                        st.session_state["user"] = result["user"]
-                        st.rerun()
-                    else:
-                        st.error(result["error"])
-        st.divider()
-    else:
-        if st.button("🚪 Sign out"):
-            st.session_state["user"] = None
-            st.session_state["rental_selected_machine"] = None
-            st.rerun()
-        st.divider()
-
-    browse_tab, my_bookings_tab, list_tab, manage_tab = st.tabs(
-        ["🚜 Available Machines", "📅 My Bookings", "🛠️ List Your Machine", "⚙️ My Listings"]
-    )
-
-    with browse_tab:
-        filter_columns = st.columns(3)
-        with filter_columns[0]:
-            location_filter = st.text_input("Filter by location", placeholder="Varanasi")
-        with filter_columns[1]:
-            type_filter = st.selectbox("Filter by type", ["Any"] + MACHINE_TYPES)
-        with filter_columns[2]:
-            only_available = st.checkbox("Only available machines", value=False)
-
-        machines = list_machines(
-            location=location_filter or None,
-            machine_type=type_filter,
-            include_unavailable=not only_available,
-        )
-        if not machines:
-            st.info("No machines match these filters. Try clearing the location filter.")
-        for machine in machines:
-            with st.container(border=True):
-                info_column, rate_column = st.columns([2, 1])
-                with info_column:
-                    section_title(machine['name'])
-                    st.caption(
-                        f"{machine.get('machine_type') or 'machine'} | {machine.get('location')} | "
-                        f"owner: {machine.get('owner_name') or machine.get('owner_username')}"
-                    )
-                    st.write(machine.get("description") or "")
-                    if not machine.get("available"):
-                        st.warning("Currently marked unavailable by the owner.")
-                with rate_column:
-                    st.metric("Hourly", f"₹{machine['hourly_rate']:,.0f}")
-                    st.metric("Daily", f"₹{machine['daily_rate']:,.0f}")
-                    st.caption(f"{machine.get('upcoming_bookings', 0)} upcoming booking(s)")
-
-                with st.expander("View / Book this machine", expanded=False):
-                    existing = bookings_for_machine(int(machine["id"]))
-                    if existing:
-                        st.markdown("**Booked dates**")
-                        for booking in existing:
-                            if booking.get("status") == "cancelled":
-                                continue
-                            st.write(
-                                f"- {booking['start_date']} → {booking['end_date']} "
-                                f"({booking.get('status')})"
-                            )
-                    else:
-                        st.caption("No bookings yet - the machine is free.")
-
-                    if not user:
-                        st.info("Sign in as a farmer (or create a farmer account) to book.")
-                    else:
-                        date_columns = st.columns(2)
-                        with date_columns[0]:
-                            start = st.date_input(
-                                "Start date", key=f"book_start_{machine['id']}", format="YYYY-MM-DD"
-                            )
-                        with date_columns[1]:
-                            end = st.date_input(
-                                "End date", key=f"book_end_{machine['id']}", format="YYYY-MM-DD"
-                            )
-                        notes = st.text_input("Notes for the owner (optional)",
-                                              key=f"book_notes_{machine['id']}")
-                        estimate = estimate_cost(machine, start, end)
-                        st.caption(
-                            f"Estimated cost: ₹{estimate['total_cost']:,.0f} "
-                            f"for {estimate['days']} day(s) at ₹{estimate['daily_rate']:,.0f}/day"
-                        )
-                        if st.button("📅 Book this machine", key=f"book_btn_{machine['id']}",
-                                     type="primary"):
-                            if user["role"] != "farmer":
-                                st.warning(
-                                    "You are signed in as a machine owner. Sign in with a farmer "
-                                    "account to book a machine."
-                                )
-                            else:
-                                result = create_booking(
-                                    int(machine["id"]), int(user["id"]), start, end, notes
-                                )
-                                if result["ok"]:
-                                    st.success(
-                                        f"Booking confirmed (#{result['booking_id']}) — "
-                                        f"₹{result['total_cost']:,.0f} for {result['days']} day(s). "
-                                        "No payment is handled by this demo."
-                                    )
-                                    st.rerun()
-                                else:
-                                    st.error(result["error"])
-
-    with my_bookings_tab:
-        if not user:
-            st.info("Sign in to see your bookings.")
-        else:
-            bookings = (
-                bookings_for_farmer(int(user["id"]))
-                if user["role"] == "farmer"
-                else bookings_for_owner(int(user["id"]))
-            )
-            if not bookings:
-                st.info("No bookings yet.")
-            for booking in bookings:
-                with st.container(border=True):
-                    st.markdown(f"**{booking['machine_name']}** ({booking.get('machine_type')})")
-                    st.write(
-                        f"{booking['start_date']} → {booking['end_date']} | "
-                        f"status: {booking['status']} | "
-                        f"cost: ₹{(booking.get('total_cost') or 0):,.0f}"
-                    )
-                    st.caption(
-                        f"Farmer: {booking.get('farmer_name') or booking.get('farmer_username')} | "
-                        f"owner: {booking.get('owner_username')} | location: "
-                        f"{booking.get('machine_location')}"
-                    )
-                    if booking["status"] != "cancelled" and st.button(
-                        "Cancel booking", key=f"cancel_{booking['id']}"
-                    ):
-                        result = cancel_booking(int(booking["id"]), int(user["id"]))
-                        if result["ok"]:
-                            st.success("Booking cancelled.")
-                            st.rerun()
-                        else:
-                            st.error(result["error"])
-
-    with list_tab:
-        if not user or user["role"] != "owner":
-            st.info(
-                "Sign in with a **machine owner** account (demo: owner_demo / owner123) or create "
-                "one to list a machine."
-            )
-        else:
-            with st.form("add_machine_form"):
-                section_title("Machine details")
-                form_columns = st.columns(2)
-                with form_columns[0]:
-                    machine_name = st.text_input("Machine name")
-                    machine_type = st.selectbox("Type", MACHINE_TYPES)
-                    machine_location = st.text_input("Location (village / city)")
-                with form_columns[1]:
-                    hourly = st.number_input("Hourly rate (₹)", min_value=1.0, value=700.0, step=50.0)
-                    daily = st.number_input("Daily rate (₹)", min_value=1.0, value=4500.0, step=100.0)
-                    description = st.text_input("Short description")
-                submitted = st.form_submit_button("➕ Add machine", type="primary")
-            if submitted:
-                result = add_machine(
-                    int(user["id"]), machine_name, machine_type, hourly, daily,
-                    machine_location, description,
-                )
-                if result["ok"]:
-                    st.success(f"Machine listed (#{result['machine_id']}).")
-                else:
-                    st.error(result["error"])
-
-    with manage_tab:
-        if not user or user["role"] != "owner":
-            st.info("This tab shows the machines you listed - available to machine owner accounts.")
-        else:
-            owned = list_machines(owner_id=int(user["id"]))
-            if not owned:
-                st.info("You have not listed any machine yet.")
-            for machine in owned:
-                with st.container(border=True):
-                    section_title(f"{machine['name']} (id {machine['id']})")
-                    with st.form(f"update_machine_{machine['id']}"):
-                        edit_columns = st.columns(3)
-                        with edit_columns[0]:
-                            new_name = st.text_input("Name", value=machine["name"])
-                            new_type = st.selectbox(
-                                "Type",
-                                MACHINE_TYPES,
-                                index=MACHINE_TYPES.index(machine["machine_type"])
-                                if machine.get("machine_type") in MACHINE_TYPES else 0,
-                            )
-                        with edit_columns[1]:
-                            new_hourly = st.number_input(
-                                "Hourly rate (₹)", min_value=1.0,
-                                value=float(machine["hourly_rate"]), step=50.0,
-                            )
-                            new_daily = st.number_input(
-                                "Daily rate (₹)", min_value=1.0,
-                                value=float(machine["daily_rate"]), step=100.0,
-                            )
-                        with edit_columns[2]:
-                            new_location = st.text_input(
-                                "Location", value=machine.get("location") or ""
-                            )
-                            new_available = st.checkbox(
-                                "Available for booking", value=bool(machine.get("available"))
-                            )
-                        new_description = st.text_input(
-                            "Description", value=machine.get("description") or ""
-                        )
-                        update_submitted = st.form_submit_button("💾 Save changes")
-                    if update_submitted:
-                        result = update_machine(
-                            int(machine["id"]), int(user["id"]), name=new_name,
-                            machine_type=new_type, hourly_rate=new_hourly, daily_rate=new_daily,
-                            location=new_location, description=new_description,
-                            available=new_available,
-                        )
-                        if result["ok"]:
-                            st.success("Machine updated.")
-                        else:
-                            st.error(result["error"])
-
-                    machine_bookings = bookings_for_machine(int(machine["id"]))
-                    if machine_bookings:
-                        with st.expander(f"Bookings for this machine ({len(machine_bookings)})"):
-                            for booking in machine_bookings:
-                                st.write(
-                                    f"- {booking['start_date']} → {booking['end_date']} | "
-                                    f"{booking.get('farmer_name') or booking.get('farmer_username')}"
-                                    f" | {booking['status']} | "
-                                    f"₹{(booking.get('total_cost') or 0):,.0f}"
-                                )
-                    if st.button("🗑️ Delete this machine", key=f"delete_{machine['id']}"):
-                        result = delete_machine(int(machine["id"]), int(user["id"]))
-                        if result["ok"]:
-                            st.success("Machine deleted.")
-                            st.rerun()
-                        else:
-                            st.error(result["error"])
-
-    st.caption(
-        "MVP scope: list, view and book. No payments and no reviews are handled (as specified). "
-        "Bookings live in data/rentals.db and overlapping bookings for the same machine are rejected."
-    )
-
 def assistant_page() -> None:
     """🤖 AI Agriculture Assistant - Gemini chat with AgriVision context."""
     page_header(
@@ -1689,7 +1369,7 @@ def assistant_page() -> None:
                     st.rerun()
 
     pending = st.session_state.pop("assistant_pending", None)
-    question = st.chat_input("Ask about your crop, weather, fertiliser, schemes or equipment...")
+    question = st.chat_input("Ask about your crop, weather, fertiliser or schemes...")
     question = question or pending
 
     if question:
@@ -1718,7 +1398,6 @@ PAGE_RENDERERS: Dict[str, Any] = {
     "🧮 Fertilizer Calculator": fertilizer_page,
     "🔐 Product Verifier": product_verifier_page,
     "🏛️ Government Schemes": schemes_page,
-    "🚜 Equipment Rental": equipment_rental_page,
     "🤖 AI Agriculture Assistant": assistant_page,
 }
 

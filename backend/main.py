@@ -11,25 +11,21 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from PIL import Image
 from pydantic import BaseModel, Field
 
-from backend.security import issue_token, read_token
-from modules import crop_doctor, equipment_rental, fertilizer, product_verifier, subsidy_matcher
+from modules import crop_doctor, fertilizer, product_verifier, subsidy_matcher
 from modules.symptom_model import predict_symptoms, symptom_model_status
 from modules.weather import weather_report, weather_status
-from utils.database import init_products_db, init_rental_db
+from utils.database import init_products_db
 from utils.gemini import fallback_diagnosis, generate_description, recommendation_for_image
 from utils.helpers import is_probably_leaf_image, load_image_from_bytes
 
 logger = logging.getLogger("agrivision.api")
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
-TOKEN_LIFETIME_SECONDS = 86_400
-bearer = HTTPBearer(auto_error=False)
 
 
 class SymptomsRequest(BaseModel):
@@ -54,47 +50,8 @@ class SchemeMatchRequest(BaseModel):
     category: Optional[str] = Field(default=None, max_length=100)
 
 
-class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=80)
-    password: str = Field(min_length=6, max_length=256)
-    role: str = Field(default="farmer", pattern="^(farmer|owner)$")
-    full_name: str = Field(default="", max_length=160)
-    phone: str = Field(default="", max_length=40)
-    location: str = Field(default="", max_length=160)
-
-
-class LoginRequest(BaseModel):
-    username: str = Field(min_length=1, max_length=80)
-    password: str = Field(min_length=1, max_length=256)
-
-
-class MachineRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=160)
-    machine_type: str = Field(min_length=1, max_length=80)
-    hourly_rate: float = Field(gt=0, le=100_000_000)
-    daily_rate: float = Field(gt=0, le=100_000_000)
-    location: str = Field(min_length=1, max_length=160)
-    description: str = Field(default="", max_length=2_000)
-
-
-class MachinePatch(BaseModel):
-    name: Optional[str] = Field(default=None, min_length=1, max_length=160)
-    machine_type: Optional[str] = Field(default=None, min_length=1, max_length=80)
-    hourly_rate: Optional[float] = Field(default=None, gt=0, le=100_000_000)
-    daily_rate: Optional[float] = Field(default=None, gt=0, le=100_000_000)
-    location: Optional[str] = Field(default=None, min_length=1, max_length=160)
-    description: Optional[str] = Field(default=None, max_length=2_000)
-    available: Optional[bool] = None
-
-
-class BookingRequest(BaseModel):
-    start_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    end_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
-    notes: str = Field(default="", max_length=2_000)
-
-
 def _check_model_availability() -> Dict[str, Optional[str]]:
-    """Verify model files exist on disk at startup without loading them into memory."""
+    """Check existence of model weight files without loading into memory."""
     issues: Dict[str, Optional[str]] = {"crop_model": None, "symptom_model": None}
     try:
         status = crop_doctor.model_status()
@@ -118,7 +75,6 @@ async def lifespan(app: FastAPI):
     app.state.model_load_issues = _check_model_availability()
     try:
         init_products_db()
-        init_rental_db()
         app.state.database_error = None
     except Exception as exc:
         app.state.database_error = type(exc).__name__
@@ -199,27 +155,6 @@ def _scrub(value: Any) -> Any:
     return value
 
 
-def _current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
-) -> Dict[str, Any]:
-    if not credentials or credentials.scheme.lower() != "bearer":
-        raise HTTPException(401, "Authentication required.", headers={"WWW-Authenticate": "Bearer"})
-    claims = None
-    try:
-        claims = read_token(credentials.credentials)
-        user = equipment_rental.get_user(int(claims["sub"]))
-    except (ValueError, TypeError):
-        user = None
-    if not user or not claims or user.get("role") != claims.get("role"):
-        raise HTTPException(401, "Invalid or expired access token.", headers={"WWW-Authenticate": "Bearer"})
-    return user
-
-
-def _require_role(user: Dict[str, Any], role: str) -> None:
-    if user.get("role") != role:
-        raise HTTPException(403, f"This action requires the {role} role.")
-
-
 def _module_result(result: Dict[str, Any], *, status_code: int = 400) -> Dict[str, Any]:
     if result.get("error"):
         raise HTTPException(status_code, _scrub(str(result["error"])))
@@ -238,9 +173,8 @@ def health():
     symptoms = symptom_model_status()
     try:
         product_db = product_verifier.verifier_status()
-        rental_db = equipment_rental.marketplace_status()
     except Exception:
-        product_db, rental_db = {"available": False}, {"available": False}
+        product_db = {"available": False}
     db_error = getattr(app.state, "database_error", None)
     try:
         scheme_available = bool(subsidy_matcher.load_schemes().get("schemes"))
@@ -253,7 +187,6 @@ def health():
         and fertilizer_available
         and scheme_available
         and product_db.get("available", False)
-        and rental_db.get("available", False)
         and not db_error
     )
     return {
@@ -277,7 +210,6 @@ def health():
             "fertilizer": {"available": fertilizer_available},
             "product_verification": {"available": product_db.get("available", False)},
             "schemes": {"available": scheme_available},
-            "equipment": {"available": rental_db.get("available", False)},
         },
         "errors": {
             key: value for key, value in getattr(app.state, "model_load_issues", {}).items() if value
@@ -447,129 +379,3 @@ def match_schemes(payload: SchemeMatchRequest):
         payload.land_size_acres, payload.region, payload.crop, payload.category
     )
     return _module_result(result, status_code=503)
-
-
-@app.get("/api/rental/machines")
-def machines(
-    location: Optional[str] = Query(default=None, max_length=160),
-    machine_type: Optional[str] = Query(default=None, max_length=80),
-    owner_id: Optional[int] = Query(default=None, ge=1),
-    available_only: bool = False,
-):
-    return {
-        "machines": equipment_rental.list_machines(
-            location=location,
-            machine_type=machine_type,
-            owner_id=owner_id,
-            include_unavailable=not available_only,
-        ),
-        "types": equipment_rental.MACHINE_TYPES,
-    }
-
-
-@app.get("/api/rental/machines/{machine_id}")
-def machine_detail(machine_id: int):
-    result = equipment_rental.get_machine(machine_id)
-    if not result:
-        raise HTTPException(404, "Machine not found.")
-    return result
-
-
-@app.post("/api/rental/auth/register", status_code=201)
-def register(payload: RegisterRequest):
-    result = equipment_rental.register_user(**_model_values(payload))
-    if not result["ok"]:
-        raise HTTPException(409, _scrub(result["error"]))
-    user = result["user"]
-    return {
-        "user": user,
-        "access_token": issue_token(user["id"], user["role"], TOKEN_LIFETIME_SECONDS),
-        "token_type": "bearer",
-        "expires_in": TOKEN_LIFETIME_SECONDS,
-    }
-
-
-@app.post("/api/rental/auth/login")
-def login(payload: LoginRequest):
-    result = equipment_rental.login_user(payload.username, payload.password)
-    if not result["ok"]:
-        raise HTTPException(401, "Invalid username or password.")
-    user = result["user"]
-    return {
-        "user": user,
-        "access_token": issue_token(user["id"], user["role"], TOKEN_LIFETIME_SECONDS),
-        "token_type": "bearer",
-        "expires_in": TOKEN_LIFETIME_SECONDS,
-    }
-
-
-@app.get("/api/rental/auth/me")
-def current_user(user: Dict[str, Any] = Depends(_current_user)):
-    return {"user": user}
-
-
-@app.post("/api/rental/machines", status_code=201)
-def add_machine(payload: MachineRequest, user: Dict[str, Any] = Depends(_current_user)):
-    _require_role(user, "owner")
-    result = equipment_rental.add_machine(owner_id=user["id"], **payload.model_dump())
-    if not result["ok"]:
-        raise HTTPException(400, _scrub(result["error"]))
-    return {"machine": equipment_rental.get_machine(result["machine_id"])}
-
-
-@app.patch("/api/rental/machines/{machine_id}")
-def update_machine(
-    machine_id: int, payload: MachinePatch, user: Dict[str, Any] = Depends(_current_user)
-):
-    _require_role(user, "owner")
-    result = equipment_rental.update_machine(
-        machine_id, user["id"], **_model_values(payload, exclude_unset=True)
-    )
-    if not result["ok"]:
-        if result["error"] == "Machine not found.":
-            status_code = 404
-        elif result["error"] == "You can only edit machines that you listed.":
-            status_code = 403
-        else:
-            status_code = 400
-        raise HTTPException(status_code, result["error"])
-    return {"machine": equipment_rental.get_machine(machine_id)}
-
-
-@app.delete("/api/rental/machines/{machine_id}")
-def delete_machine(machine_id: int, user: Dict[str, Any] = Depends(_current_user)):
-    _require_role(user, "owner")
-    result = equipment_rental.delete_machine(machine_id, user["id"])
-    if not result["ok"]:
-        raise HTTPException(404 if result["error"] == "Machine not found." else 403, result["error"])
-    return {"deleted": True}
-
-
-@app.get("/api/rental/bookings")
-def list_bookings(user: Dict[str, Any] = Depends(_current_user)):
-    if user["role"] == "owner":
-        results = equipment_rental.bookings_for_owner(user["id"])
-    else:
-        results = equipment_rental.bookings_for_farmer(user["id"])
-    return {"bookings": results}
-
-
-@app.post("/api/rental/machines/{machine_id}/bookings", status_code=201)
-def create_booking(
-    machine_id: int, payload: BookingRequest, user: Dict[str, Any] = Depends(_current_user)
-):
-    _require_role(user, "farmer")
-    result = equipment_rental.create_booking(
-        machine_id, user["id"], payload.start_date, payload.end_date, payload.notes
-    )
-    if not result["ok"]:
-        raise HTTPException(409, _scrub(result["error"]))
-    return result
-
-
-@app.delete("/api/rental/bookings/{booking_id}")
-def cancel_booking(booking_id: int, user: Dict[str, Any] = Depends(_current_user)):
-    result = equipment_rental.cancel_booking(booking_id, user["id"])
-    if not result["ok"]:
-        raise HTTPException(403 if "Only the farmer" in result["error"] else 404, result["error"])
-    return {"cancelled": True}

@@ -23,7 +23,6 @@ it does not invent predictions, schemes or calculations.
 | 4 | 🧮 **Fertilizer Calculator** | **Deterministic** | Per-acre lookup table for crop × deficiency → fertilizer, quantity, cost. *Not ML, never an LLM guess.* |
 | 5 | 🔐 **Product Verifier** | **Database** | SQLite product registry lookup (+ OpenCV QR decoding). Simulated demo registry. |
 | 6 | 🏛️ **Government Schemes** | **Static rules** | 4-step wizard matching land size / region / crop / support type against 8 real schemes with official links. |
-| 7 | 🚜 **Equipment Rental** | **Database** | SQLite marketplace: two roles, machine CRUD, bookings with overlap prevention. |
 | — | 🤖 **AI Assistant** | LLM | Gemini chat that can use your AgriVision results as context. |
 | — | 🏠 **Dashboard** | UI | Crop health, disease risk, weather, quick actions, model-performance card. |
 
@@ -41,9 +40,8 @@ agri-vision/
 ├── PROJECT_REPORT.md             # college report notes (module by module)
 ├── backend/
 │   ├── main.py                   # FastAPI routes; reuses modules/ and utils/
-│   ├── security.py               # Rental API bearer-token signing
 │   ├── requirements.txt          # API runtime dependencies (no Streamlit)
-│   └── test_api.py               # API and booking-conflict tests
+│   └── test_api.py               # API integration tests
 ├── frontend/
 │   ├── src/                      # React, TypeScript, Tailwind and 3D field scene
 │   ├── package.json
@@ -60,7 +58,6 @@ agri-vision/
 │   ├── fertilizer_data.json      # deterministic fertilizer table (Module 4)
 │   ├── schemes.json              # 8 real government schemes (Module 6)
 │   ├── products.db               # SQLite registry (Module 5, seeded with demo rows)
-│   ├── rentals.db                # SQLite rental marketplace (Module 7)
 │   ├── sample_images/            # sample leaf photos for baseline inference
 │   ├── dataset/{train,val}/      # fine-tuning subset (git-ignored)
 │   └── evaluation/               # metrics, plots, reports, manifests
@@ -71,8 +68,7 @@ agri-vision/
 │   ├── weather.py                # Open-Meteo + risk rule engine
 │   ├── fertilizer.py             # deterministic calculator
 │   ├── product_verifier.py       # registry lookup + QR decode
-│   ├── subsidy_matcher.py        # static scheme matching
-│   └── equipment_rental.py       # auth, machine CRUD, bookings
+│   └── subsidy_matcher.py        # static scheme matching
 │
 ├── utils/
 │   ├── gemini.py                 # Gemini wrapper + offline fallbacks
@@ -110,7 +106,6 @@ pip install -r backend/requirements.txt
 # 2) Configure backend-only secrets; never commit the real .env
 Copy-Item .env.example .env
 # Edit .env with GEMINI_API_KEY as needed.
-# Set AGRIVISION_AUTH_SECRET to a private random value for stable rental tokens.
 
 # 3) Start the API in one terminal
 python -m uvicorn backend.main:app --reload
@@ -139,8 +134,8 @@ The backend health endpoint is `GET /api/health`; interactive API documentation
 is available at `/docs` while the development server is running.
 
 The API also exposes crop diagnosis, symptoms and Grad-CAM; weather; fertilizer
-options and calculations; product and QR verification; scheme listing and
-matching; and authenticated equipment listings and bookings. Weather can analyze
+options and calculations; product and QR verification; and scheme listing and
+matching. Weather can analyze
 farmer-entered values with
 `GET /api/weather?city=Farm&temperature=30&humidity=70`. Such values are
 identified as manual observations and pass through the existing risk rules.
@@ -215,7 +210,7 @@ Manual checklist used while building each module is described in
 
 The React frontend provides responsive navigation for the overview, Crop Doctor,
 weather intelligence, fertilizer planning, product verification, scheme matcher,
-equipment rental and About pages. The overview includes a lazily loaded,
+and About pages. The overview includes a lazily loaded,
 interactive React Three Fiber crop field. Feature pages render data returned by
 the backend and do not ship example predictions or secret API keys.
 
@@ -235,8 +230,6 @@ the backend and do not ship example predictions or secret API keys.
 * **Fertilizer Calculator** — static per-acre lookup, plain arithmetic.
 * **Product Verifier** — SQLite registry lookup.
 * **Government Schemes** — static rule matching against `data/schemes.json`.
-* **Equipment Rental** — SQLite CRUD + overlap-checked bookings with PBKDF2
-  password hashing.
 
 Gemini is never allowed to invent a diagnosis, a scheme name, an application
 link, a fertilizer dose or a product verification result — the prompts contain

@@ -432,8 +432,7 @@ ASSISTANT_PREAMBLE: str = (
     "You are the AgriVision agriculture assistant for Indian farmers. AgriVision has these "
     "tools: Crop Doctor (leaf photo + symptom description -> disease diagnosis with Grad-CAM), "
     "Weather & Crop Risk, Fertilizer Calculator (rule based, per acre), "
-    "Product Verifier (registered product codes), Government Schemes matcher and an "
-    "Equipment Rental marketplace."
+    "Product Verifier (registered product codes), and Government Schemes matcher."
 )
 
 def fallback_assistant_answer(question: str, context: Optional[Dict[str, Any]] = None) -> str:
@@ -468,11 +467,6 @@ def fallback_assistant_answer(question: str, context: Optional[Dict[str, Any]] =
             "Open the Government Schemes page: it matches your land size, region and crop against "
             "the official scheme list and links to the real application pages."
         )
-    elif any(word in lowered for word in ("rent", "tractor", "harvester", "machine", "equipment")):
-        reply = (
-            "The Equipment Rental page lists machines with hourly and daily rates. You can list "
-            "your own machine there too."
-        )
     elif any(word in lowered for word in ("weather", "rain", "humidity", "temperature")):
         reply = (
             "Enter your city on the Weather & Crop Risk page to see the current temperature, "
@@ -481,7 +475,7 @@ def fallback_assistant_answer(question: str, context: Optional[Dict[str, Any]] =
     else:
         reply = (
             "I can help with crop disease diagnosis, weather risk, fertiliser "
-            "planning, scheme matching and equipment rental. "
+            "planning and scheme matching. "
             "Start with Crop Doctor: upload a leaf photo and describe what you see."
         )
 

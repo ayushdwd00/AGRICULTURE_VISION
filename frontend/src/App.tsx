@@ -13,7 +13,6 @@ import {
   ScanLine,
   ShieldCheck,
   Sprout,
-  Tractor,
   Wheat,
   X,
 } from "lucide-react";
@@ -26,9 +25,8 @@ import WeatherPage from "./pages/WeatherPage";
 import FertilizerPage from "./pages/FertilizerPage";
 import ProductPage from "./pages/ProductPage";
 import SchemesPage from "./pages/SchemesPage";
-import EquipmentPage from "./pages/EquipmentPage";
 
-type PageId = "home" | "doctor" | "weather" | "fertilizer" | "products" | "schemes" | "equipment" | "about";
+type PageId = "home" | "doctor" | "weather" | "fertilizer" | "products" | "schemes" | "about";
 type PageEntry = { id: PageId; label: string; icon: LucideIcon };
 
 const pages: PageEntry[] = [
@@ -38,7 +36,6 @@ const pages: PageEntry[] = [
   { id: "fertilizer", label: "Fertilizer planner", icon: FlaskConical },
   { id: "products", label: "Product verification", icon: ShieldCheck },
   { id: "schemes", label: "Scheme matcher", icon: BookOpen },
-  { id: "equipment", label: "Equipment rental", icon: Tractor },
   { id: "about", label: "About AgriVision", icon: Sprout },
 ];
 
@@ -67,7 +64,6 @@ function HomePage({
     { icon: FlaskConical, title: "Fertilizer planner", copy: "Estimate quantities and indicative cost from the existing lookup table.", page: "fertilizer" },
     { icon: ShieldCheck, title: "Product verification", copy: "Check a product code against the local registry.", page: "products" },
     { icon: BookOpen, title: "Scheme matcher", copy: "Find relevant public schemes using your farm details.", page: "schemes" },
-    { icon: Tractor, title: "Equipment rental", copy: "Browse farm equipment and manage rental bookings.", page: "equipment" },
   ];
 
   return (
@@ -122,7 +118,7 @@ function HomePage({
           <ul className="list">
             <li>Fine-tuned MobileNetV2 with symptom classification and Grad-CAM.</li>
             <li>Weather risks, fertilizer rates and scheme matches use existing rules and datasets.</li>
-            <li>Product records and equipment bookings are read from the SQLite databases.</li>
+            <li>Product records are verified against the local SQLite registry.</li>
           </ul>
           <p className="home-footnote">No demo diagnoses, invented weather readings, or fabricated schemes are shown.</p>
         </Card>
@@ -130,7 +126,6 @@ function HomePage({
           <div className="card-title"><div><h2>From the field, to the next step</h2><p>Choose a tool to get started.</p></div><Wheat size={17} color="#6c8962" /></div>
           <div className="activity-row"><span className="activity-icon"><ScanLine size={15} /></span><div><strong>Check a crop symptom</strong><span>Image and symptom analysis</span></div></div>
           <div className="activity-row"><span className="activity-icon"><CloudSun size={15} /></span><div><strong>Understand local conditions</strong><span>Weather and crop risk</span></div></div>
-          <div className="activity-row"><span className="activity-icon"><Tractor size={15} /></span><div><strong>Find farm equipment</strong><span>Browse and book locally</span></div></div>
         </Card>
       </div>
     </>
@@ -142,7 +137,13 @@ function AboutPage({ health }: { health: ApiHealth | null }) {
     <>
       <PageHeader
         eyebrow="The platform"
-        title="Agriculture intelligence, made practical."
+        title={
+          <>
+            Agriculture intelligence,
+            <br />
+            made practical.
+          </>
+        }
         description="AgriVision brings your existing crop models and farm tools into one clear, connected workspace."
       />
       <div className="about-banner">
@@ -154,7 +155,6 @@ function AboutPage({ health }: { health: ApiHealth | null }) {
           <div className="card-title"><div><h2>What powers the platform</h2><p>Existing project components are reused rather than replaced.</p></div></div>
           <div className="about-point"><span className="feature-icon"><ScanLine size={16} /></span><div><strong>Crop Doctor</strong><p>Fine-tuned MobileNetV2, a Random Forest symptom classifier, Grad-CAM and optional Gemini explanations.</p></div></div>
           <div className="about-point"><span className="feature-icon"><CloudSun size={16} /></span><div><strong>Farm planning tools</strong><p>Open-Meteo with deterministic risk rules, fertilizer lookup calculations and local product/scheme data.</p></div></div>
-          <div className="about-point"><span className="feature-icon"><Tractor size={16} /></span><div><strong>Marketplace</strong><p>SQLite-backed equipment listings, farmer and owner workflows, and booking overlap prevention.</p></div></div>
         </Card>
         <Card>
           <div className="card-title"><div><h2>Service status</h2><p>Current connection to the AgriVision API.</p></div><span className="feature-icon"><Activity size={16} /></span></div>
@@ -250,7 +250,6 @@ export default function App() {
               {activePage === "fertilizer" ? <FertilizerPage /> : null}
               {activePage === "products" ? <ProductPage /> : null}
               {activePage === "schemes" ? <SchemesPage /> : null}
-              {activePage === "equipment" ? <EquipmentPage /> : null}
             </motion.div>
           </AnimatePresence>
         </main>

@@ -32,7 +32,6 @@ PAGES: List[str] = [
     "🧮 Fertilizer Calculator",
     "🔐 Product Verifier",
     "🏛️ Government Schemes",
-    "🚜 Equipment Rental",
     "🤖 AI Agriculture Assistant",
 ]
 
