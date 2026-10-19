@@ -7,19 +7,17 @@ export function PageHeader({
   description,
   action,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: ReactNode;
-  description: string;
+  description?: string;
   action?: ReactNode;
 }) {
   return (
     <header className="page-heading">
-      <div>
-        <div className="eyebrow">{eyebrow}</div>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {action}
+      {eyebrow ? <div className="eyebrow">{eyebrow}</div> : null}
+      <h1>{title}</h1>
+      {description ? <p>{description}</p> : null}
+      {action ? <div style={{ marginTop: 16 }}>{action}</div> : null}
     </header>
   );
 }
@@ -73,7 +71,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`button ${variantClass} ${className}`}
+      className={`button ${variantClass} ${className}`.trim()}
       disabled={props.disabled || loading}
     >
       {loading ? <LoaderCircle size={15} className="spin-icon" /> : null}
