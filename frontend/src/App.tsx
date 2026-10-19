@@ -111,18 +111,6 @@ function HomePage({
 
       <div className="home-lower">
         <Card>
-          <div className="card-title">
-            <div><h2>Built on your existing AgriVision logic</h2><p>Predictions and calculations come from the connected backend.</p></div>
-            <span className="feature-icon"><Activity size={16} /></span>
-          </div>
-          <ul className="list">
-            <li>Fine-tuned MobileNetV2 with symptom classification and Grad-CAM.</li>
-            <li>Weather risks, fertilizer rates and scheme matches use existing rules and datasets.</li>
-            <li>Product records are verified against the local SQLite registry.</li>
-          </ul>
-          <p className="home-footnote">No demo diagnoses, invented weather readings, or fabricated schemes are shown.</p>
-        </Card>
-        <Card>
           <div className="card-title"><div><h2>From the field, to the next step</h2><p>Choose a tool to get started.</p></div><Wheat size={17} color="#6c8962" /></div>
           <div className="activity-row"><span className="activity-icon"><ScanLine size={15} /></span><div><strong>Check a crop symptom</strong><span>Image and symptom analysis</span></div></div>
           <div className="activity-row"><span className="activity-icon"><CloudSun size={15} /></span><div><strong>Understand local conditions</strong><span>Weather and crop risk</span></div></div>

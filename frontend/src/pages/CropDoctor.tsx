@@ -214,7 +214,6 @@ export default function CropDoctor() {
         {error ? <Alert tone="error">{error}</Alert> : null}
         <div className="diagnose-actions">
           <Button type="submit" loading={loading}><Sparkles size={15} /> {loading ? "Analyzing crop…" : "Analyze crop"}</Button>
-          <span className="privacy-note">Your image is analyzed by the AgriVision backend and is not included in frontend code.</span>
         </div>
       </form>
 
