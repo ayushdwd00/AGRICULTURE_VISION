@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Calculator, IndianRupee, Leaf, Ruler } from "lucide-react";
+import { Calculator, Camera, IndianRupee, Leaf, Ruler } from "lucide-react";
 import { get, post } from "../services/api";
 import type { FertilizerResult } from "../types";
 import { Alert, Button, Card, EmptyState, Field, PageHeader } from "../components/ui";
@@ -122,6 +122,40 @@ export default function FertilizerPage() {
         ) : (
           <Card><EmptyState icon={<Calculator size={23} />}>Your recommendation, dosage and estimated cost will appear here after a calculation.</EmptyState></Card>
         )}
+      </div>
+
+      <div className="cultivation-page-card">
+        <figure className="editorial-photo-figure">
+          <div className="editorial-photo-frame">
+            <img
+              src="/images/vegetable-garden.jpg"
+              alt="Thriving raised vegetable garden beds with diverse crops and fertile soil"
+              className="editorial-photo-img"
+              loading="lazy"
+            />
+          </div>
+          <figcaption className="editorial-photo-caption">
+            <span>
+              <Camera size={12} /> Practical field cultivation
+            </span>
+            <span className="editorial-photo-source">AgriFarming</span>
+          </figcaption>
+        </figure>
+
+        <div>
+          <span className="eyebrow">Practical Cultivation Guidance</span>
+          <h3 style={{ fontSize: 18, margin: "0 0 6px" }}>Soil stewardship and nutrient application</h3>
+          <p style={{ fontSize: 13.5, color: "var(--color-muted)", lineHeight: 1.55, margin: "0 0 12px" }}>
+            Mineral fertilizer dosages calculated above are most effective when paired with adequate organic matter,
+            timely irrigation, and balanced micronutrients. Split applications into basal and top-dressing phases
+            to reduce leaching, sustain soil microbes, and protect ground water.
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span className="status-pill">Split-dose timing</span>
+            <span className="status-pill">Organic compost base</span>
+            <span className="status-pill">Soil health card alignment</span>
+          </div>
+        </div>
       </div>
     </>
   );

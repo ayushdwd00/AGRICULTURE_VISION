@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "lenis/dist/lenis.css";
 
 :root {
   --color-linen: #edede2;
@@ -920,13 +921,9 @@ body,
   position: absolute;
   pointer-events: none;
   z-index: 2; /* Renders above background, but outside card content */
-  opacity: 0;
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  line-height: 0;
-}
-
-.botanical-leaf-wrap.is-revealed {
   opacity: 1;
+  line-height: 0;
+  will-change: transform, opacity;
 }
 
 .botanical-svg {
@@ -1338,7 +1335,302 @@ textarea.field {
   margin: 6px 0 0;
 }
 
-/* 2. Tools Section */
+/* ==========================================================================
+   Editorial Agricultural Photography System
+   ========================================================================== */
+.editorial-photo-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.editorial-photo-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-cream);
+  box-shadow: 0 4px 18px rgba(27, 61, 38, 0.05);
+}
+
+.editorial-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-photo-frame:hover .editorial-photo-img {
+  transform: scale(1.02);
+}
+
+.editorial-photo-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--color-muted);
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.editorial-photo-caption span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.editorial-photo-source {
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted-light);
+  white-space: nowrap;
+}
+
+/* Wide Panoramic Landscape Banner (Rodale Institute Farmland) */
+.landscape-panorama-wrap {
+  margin-bottom: 28px;
+}
+
+.landscape-panorama-frame {
+  width: 100%;
+  height: clamp(230px, 30vw, 360px);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-cream);
+  box-shadow: 0 6px 24px rgba(27, 61, 38, 0.06);
+}
+
+.landscape-panorama-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  display: block;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landscape-panorama-frame:hover .landscape-panorama-img {
+  transform: scale(1.015);
+}
+
+.landscape-panorama-badge {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-tag);
+  background-color: rgba(255, 255, 243, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-sage-deep);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 2. Tools Section — Asymmetric Editorial Layout */
+.tools-editorial-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.tools-featured-card {
+  position: relative;
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 22px;
+  align-items: stretch;
+  box-shadow: 0 6px 22px rgba(27, 61, 38, 0.04);
+}
+
+.tools-featured-photo-wrap {
+  height: 100%;
+  min-height: 290px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tools-featured-photo-frame {
+  flex: 1;
+  min-height: 270px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.tools-featured-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  display: block;
+}
+
+.tools-featured-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.tools-featured-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-sage-deep);
+  background-color: var(--color-sage);
+  padding: 3px 9px;
+  border-radius: var(--radius-tag);
+  margin-bottom: 10px;
+  align-self: flex-start;
+}
+
+.tools-featured-copy h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0 0 10px;
+}
+
+.tools-featured-copy p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-muted);
+  margin: 0 0 16px;
+}
+
+.tools-tech-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.tools-tech-pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-tag);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  color: var(--color-charcoal);
+}
+
+/* Secondary 2x2 Utility Grid */
+.tools-utility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.tool-utility-card {
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.tool-utility-card:hover {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(27, 61, 38, 0.05);
+}
+
+.tool-utility-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tool-utility-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  display: grid;
+  place-items: center;
+  color: var(--color-sage-deep);
+}
+
+.tool-utility-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: var(--radius-tag);
+  background-color: rgba(27, 61, 38, 0.06);
+  color: var(--color-muted);
+}
+
+.tool-utility-card h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0 0 6px;
+}
+
+.tool-utility-card p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin: 0;
+  flex: 1;
+}
+
+.tool-utility-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Backward-compatible classes */
 .tools-editorial-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1406,7 +1698,68 @@ textarea.field {
   border-top: 1px solid var(--color-border);
 }
 
-/* 3. Workflow Section */
+/* 3. Architectural Workflow Process Timeline */
+.workflow-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  position: relative;
+  margin-top: 16px;
+}
+
+.workflow-timeline-step {
+  position: relative;
+  padding: 24px 22px;
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.workflow-num-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.workflow-num-large {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--color-sage-deep);
+}
+
+.workflow-step-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-tag);
+  background-color: rgba(27, 61, 38, 0.08);
+  color: var(--color-sage-deep);
+}
+
+.workflow-timeline-step h4 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0 0 8px;
+}
+
+.workflow-timeline-step p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-muted);
+  margin: 0;
+}
+
 .workflow-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1445,7 +1798,52 @@ textarea.field {
   line-height: 1.55;
 }
 
-/* 4. Feature Spotlight Panels — Balanced Two-Column Crop Health Insights */
+/* 4. Crop Health Insights Editorial Spread */
+.crop-editorial-spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.crop-editorial-left {
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crop-editorial-photo-box {
+  width: 100%;
+}
+
+.crop-editorial-photo-box .editorial-photo-frame {
+  height: clamp(200px, 24vw, 270px);
+}
+
+.crop-editorial-photo-box .editorial-photo-img {
+  object-position: center 35%;
+}
+
+.crop-editorial-narrative h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0 0 10px;
+}
+
+.crop-editorial-narrative p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-muted);
+  margin: 0 0 16px;
+}
+
 .feature-spotlight {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
@@ -1541,6 +1939,66 @@ textarea.field {
   margin-top: 2px;
 }
 
+/* 5. Weather & Cultivation Guidance Split */
+.weather-cultivation-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.weather-cultivation-split > .botanical-card-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.weather-module-card,
+.cultivation-module-card {
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 4px 18px rgba(27, 61, 38, 0.04);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.weather-module-card:hover,
+.cultivation-module-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(27, 61, 38, 0.22);
+  box-shadow: 0 8px 22px rgba(27, 61, 38, 0.07);
+}
+
+.weather-module-card h3,
+.cultivation-module-card h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 6px 0 10px;
+}
+
+.weather-module-card p,
+.cultivation-module-card p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted);
+  margin: 0 0 20px;
+}
+
+.weather-module-card .pillar-preview-box,
+.cultivation-module-card .pillar-preview-box {
+  margin-bottom: 24px;
+  margin-top: auto;
+}
+
 /* Twin Pillars Section (Weather & Fertilizer) */
 .twin-pillars-grid {
   display: grid;
@@ -1580,6 +2038,24 @@ textarea.field {
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 20px;
+}
+
+/* Cultivation Guidance Card in FertilizerPage */
+.cultivation-page-card {
+  margin-top: 24px;
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.cultivation-page-card .editorial-photo-frame {
+  height: 160px;
+  border-radius: 10px;
 }
 
 /* Callout Banner */
@@ -2470,6 +2946,24 @@ textarea.field {
     grid-template-columns: 1fr;
     gap: 32px;
   }
+  .tools-editorial-layout {
+    grid-template-columns: 1fr;
+  }
+  .workflow-timeline {
+    grid-template-columns: 1fr;
+  }
+  .crop-editorial-spread {
+    grid-template-columns: 1fr;
+  }
+  .weather-cultivation-split {
+    grid-template-columns: 1fr;
+  }
+  .cultivation-page-card {
+    grid-template-columns: 1fr;
+  }
+  .cultivation-page-card .editorial-photo-frame {
+    height: 200px;
+  }
   .tools-editorial-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2508,6 +3002,26 @@ textarea.field {
   }
   .main-content {
     padding: 20px 16px 56px;
+  }
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .tools-featured-card {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 16px;
+  }
+  .tools-featured-photo-wrap {
+    min-height: 220px;
+  }
+  .tools-featured-photo-frame {
+    min-height: 200px;
+  }
+  .tools-utility-grid {
+    grid-template-columns: 1fr;
   }
   .tools-editorial-grid {
     grid-template-columns: 1fr;
@@ -2592,53 +3106,56 @@ textarea.field {
 }
 
 /* ========================================================
-   PHASE 2 — SCROLL REVEAL & STAGGER ANIMATIONS
+   LENIS SMOOTH SCROLLING & GSAP SCROLLTRIGGER STYLES
    ======================================================== */
+html.lenis,
+html.lenis body {
+  height: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
 .homepage-section {
   scroll-margin-top: 90px;
-  opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-.homepage-section.section-revealed,
 .hero-section {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
 }
 
-/* Staggered appearance of cards as sections enter view */
-.section-revealed .tools-editorial-grid > *:nth-child(1),
-.section-revealed .workflow-grid > *:nth-child(1),
-.section-revealed .twin-pillars-grid > *:nth-child(1) {
-  animation: cardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
-}
-.section-revealed .tools-editorial-grid > *:nth-child(2),
-.section-revealed .workflow-grid > *:nth-child(2),
-.section-revealed .twin-pillars-grid > *:nth-child(2) {
-  animation: cardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.11s both;
-}
-.section-revealed .tools-editorial-grid > *:nth-child(3),
-.section-revealed .workflow-grid > *:nth-child(3) {
-  animation: cardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
-}
-.section-revealed .tools-editorial-grid > *:nth-child(4) {
-  animation: cardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
-}
-.section-revealed .tools-editorial-grid > *:nth-child(5) {
-  animation: cardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
-}
-
-@keyframes cardFadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Hardware-accelerated smooth rendering on animated elements */
+.tool-card,
+.pillar-card,
+.workflow-step,
+.feature-spotlight,
+.crop-inspection-card,
+.botanical-leaf-wrap,
+.section-head {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
 
 /* Subtle, restrained hover feedback on interactive cards */
@@ -2646,7 +3163,7 @@ textarea.field {
 .pillar-card,
 .workflow-step,
 .feature-spotlight {
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
 .tool-card:hover,
@@ -2958,7 +3475,20 @@ textarea.field {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .botanical-leaf-wrap {
+  .homepage-section,
+  .botanical-leaf-wrap,
+  .tool-card,
+  .tools-featured-card,
+  .tool-utility-card,
+  .workflow-timeline-step,
+  .pillar-card,
+  .workflow-step,
+  .feature-spotlight,
+  .crop-editorial-left,
+  .weather-module-card,
+  .cultivation-module-card,
+  .editorial-photo-img,
+  .landscape-panorama-img {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;

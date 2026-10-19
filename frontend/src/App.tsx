@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   ArrowDown,
   ArrowRight,
   BookOpen,
+  Camera,
   CheckCircle2,
   ChevronDown,
   CloudSun,
   FlaskConical,
+  MapPin,
   Menu,
   ScanLine,
   ShieldCheck,
@@ -28,6 +33,8 @@ import WeatherPage from "./pages/WeatherPage";
 import FertilizerPage from "./pages/FertilizerPage";
 import ProductPage from "./pages/ProductPage";
 import SchemesPage from "./pages/SchemesPage";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export type ToolPageId = "doctor" | "weather" | "fertilizer" | "products" | "schemes";
 export type AppView = "home" | ToolPageId;
@@ -82,49 +89,301 @@ const toolPages: Array<{ id: ToolPageId; label: string; icon: LucideIcon; desc: 
 function ContinuousHomePage({
   openTool,
   health,
+  onActiveSection,
+  scrollToSection,
 }: {
   openTool: (tool: ToolPageId) => void;
   health: ApiHealth | null;
+  onActiveSection: (id: string) => void;
+  scrollToSection: (id: string) => void;
 }) {
-  const scrollToSection = (sectionId: string) => {
-    const el = document.getElementById(sectionId);
-    if (!el) return;
-    const headerOffset = 90;
-    const elementPosition = el.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: "smooth",
-    });
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      document.querySelectorAll(".homepage-section").forEach((el) => {
-        el.classList.add("section-revealed");
-      });
-      return;
-    }
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const sections = document.querySelectorAll(".homepage-section");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("section-revealed");
-            observer.unobserve(entry.target);
-          }
+    const ctx = gsap.context(() => {
+      // 1. Synchronized Active Section Tracking using ScrollTrigger
+      const sectionIds = [
+        "overview",
+        "tools",
+        "workflow",
+        "crop-intelligence",
+        "weather-fertilizer",
+        "verification-schemes",
+        "about",
+      ];
+
+      sectionIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        ScrollTrigger.create({
+          trigger: el,
+          start: "top 40%",
+          end: "bottom 40%",
+          onEnter: () => onActiveSection(id),
+          onEnterBack: () => onActiveSection(id),
         });
-      },
-      { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
-    );
+      });
 
-    sections.forEach((sec) => observer.observe(sec));
-    return () => observer.disconnect();
-  }, []);
+      if (prefersReducedMotion) {
+        // Reduced motion: ensure all sections, cards, and decorations are immediately visible
+        gsap.set(
+          ".homepage-section, .section-head, .tools-featured-card, .tool-utility-card, .tool-card, .workflow-timeline-step, .workflow-step, .pillar-card, .split-card, .botanical-leaf-wrap, .crop-editorial-left, .crop-inspection-card, .weather-module-card, .cultivation-module-card, .landscape-panorama-frame, .cta-banner",
+          { opacity: 1, y: 0, x: 0, scale: 1, clearProps: "all" }
+        );
+        return;
+      }
+
+      // 2. Section Entrances: Fade in and gently move section content into place as it enters viewport
+      gsap.utils.toArray<HTMLElement>(".homepage-section").forEach((sec) => {
+        gsap.fromTo(
+          sec,
+          { opacity: 0, y: 28 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.95,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: sec,
+              start: "top 88%",
+              once: true,
+            },
+          }
+        );
+      });
+
+      // 3. Section Headings: Subtle entrance animations while preserving existing typography
+      gsap.utils.toArray<HTMLElement>(".section-head").forEach((head) => {
+        gsap.fromTo(
+          head,
+          { opacity: 0, y: 18 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.85,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: head,
+              start: "top 88%",
+              once: true,
+            },
+          }
+        );
+      });
+
+      // 4. Agricultural Tools Featured Lead & Utility Cards Reveal
+      gsap.fromTo(
+        ".tools-featured-card",
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".tools-editorial-layout",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".tools-utility-grid .tool-utility-card, .tools-editorial-grid .tool-card",
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          stagger: 0.08,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".tools-utility-grid",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 5. Workflow Timeline Steps Stagger
+      gsap.fromTo(
+        ".workflow-timeline .workflow-timeline-step, .workflow-grid .workflow-step",
+        { opacity: 0, y: 22 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".workflow-timeline",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 6. Crop Health Insights Editorial Spread & Inspection Leaf
+      gsap.fromTo(
+        "#crop-intelligence .crop-editorial-left",
+        { opacity: 0, x: -18 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.9,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: "#crop-intelligence",
+            start: "top 82%",
+            once: true,
+          },
+        }
+      );
+
+      gsap.fromTo(
+        "#crop-intelligence .crop-inspection-card",
+        { opacity: 0, x: 18 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.9,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: "#crop-intelligence",
+            start: "top 82%",
+            once: true,
+          },
+        }
+      );
+
+      gsap.fromTo(
+        "#crop-intelligence .inspection-leaf-svg",
+        { opacity: 0.75, scale: 0.95 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 1.0,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: "#crop-intelligence",
+            start: "top 80%",
+            once: true,
+          },
+        }
+      );
+
+      // 7. Aerial Farmland Landscape Panorama & Decision Engines
+      gsap.fromTo(
+        ".landscape-panorama-frame",
+        { opacity: 0, scale: 0.98 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 0.95,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".landscape-panorama-wrap",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".weather-cultivation-split > div, .twin-pillars-grid .pillar-card",
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".weather-cultivation-split",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 8. Split Grid (About Section)
+      gsap.fromTo(
+        ".split-grid .botanical-card-wrap",
+        { opacity: 0, y: 22 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          stagger: 0.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: ".split-grid",
+            start: "top 85%",
+            once: true,
+          },
+        }
+      );
+
+      // 9. CTA Banner
+      gsap.fromTo(
+        "#cta",
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: "#cta",
+            start: "top 88%",
+            once: true,
+          },
+        }
+      );
+
+      // 10. Botanical Foliage: Restrained gentle reveal
+      gsap.utils.toArray<HTMLElement>(".botanical-leaf-wrap").forEach((leaf) => {
+        gsap.fromTo(
+          leaf,
+          { opacity: 0, scale: 0.94 },
+          {
+            opacity: 1,
+            scale: 1,
+            duration: 0.95,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: leaf,
+              start: "top 92%",
+              once: true,
+            },
+          }
+        );
+      });
+
+      // 11. Botanical Parallax on Desktop (wide screens >= 1024px only)
+      if (window.innerWidth >= 1024) {
+        gsap.utils.toArray<HTMLElement>(".botanical-leaf-wrap").forEach((leaf) => {
+          gsap.to(leaf, {
+            yPercent: -10,
+            ease: "none",
+            scrollTrigger: {
+              trigger: leaf,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 1.6,
+            },
+          });
+        });
+      }
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [onActiveSection]);
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* 1. HERO SECTION */}
       <section id="overview" className="hero-section">
         <div className="hero-copy">
@@ -171,85 +430,147 @@ function ContinuousHomePage({
           <p>Every tool connects to verifiable models, local databases, or official sources.</p>
         </div>
 
-        <div className="tools-editorial-grid">
-          {/* Tool 1: Crop Doctor (with Botanical decoration visibly beside outer left edge) */}
+        <div className="tools-editorial-layout">
+          {/* Featured Anchor: Crop Doctor with Unsplash Crop Photography */}
           <div className="botanical-card-wrap">
             <BotanicalLeaf position="beside-left" variant="side-bloom" />
-            <div className="tool-card" onClick={() => openTool("doctor")} role="button" tabIndex={0}>
-              <div className="tool-card-icon">
-                <ScanLine size={19} />
+            <div className="tools-featured-card">
+              <div className="tools-featured-photo-wrap">
+                <div className="editorial-photo-frame tools-featured-photo-frame">
+                  <img
+                    src="/images/crop-photography.jpg"
+                    alt="Field crop foliage close-up showing leaf structure and health conditions"
+                    className="editorial-photo-img"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="editorial-photo-caption">
+                  <span>
+                    <Camera size={12} /> Crop foliage scouting
+                  </span>
+                  <span className="editorial-photo-source">Unsplash</span>
+                </div>
               </div>
-              <h3>Crop Doctor</h3>
-              <p>Computer vision leaf disease detection with MobileNetV2, Random Forest symptom classification, and Grad-CAM visual heatmaps.</p>
-              <div className="tool-card-action">
-                Open full tool <ArrowRight size={13} />
+
+              <div className="tools-featured-copy">
+                <span className="tools-featured-badge">Dual-Signal Vision Engine</span>
+                <h3>Crop Doctor</h3>
+                <p>
+                  Combines visual leaf inspection with farmer symptom observations. Uses MobileNetV2
+                  transfer learning to identify disease markers and Random Forest for symptom heuristics.
+                </p>
+                <div className="tools-tech-pill-row">
+                  <span className="tools-tech-pill">MobileNetV2 CNN</span>
+                  <span className="tools-tech-pill">Grad-CAM Heatmaps</span>
+                  <span className="tools-tech-pill">Symptom Classifier</span>
+                </div>
+                <div>
+                  <Button onClick={() => openTool("doctor")}>
+                    Launch Crop Doctor <ArrowRight size={14} />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Tool 2: Weather Intelligence (with Botanical flower branch peeking outer top right) */}
-          <div className="botanical-card-wrap">
-            <BotanicalLeaf position="outer-top-right" variant="flower-branch" />
-            <div className="tool-card" onClick={() => openTool("weather")} role="button" tabIndex={0}>
-              <div className="tool-card-icon">
-                <CloudSun size={19} />
+          {/* Secondary 2x2 Utility Grid for Other Engines */}
+          <div className="tools-utility-grid">
+            {/* Tool 2: Weather Intelligence */}
+            <div
+              className="tool-utility-card"
+              onClick={() => openTool("weather")}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="tool-utility-head">
+                <div className="tool-utility-icon">
+                  <CloudSun size={18} />
+                </div>
+                <span className="tool-utility-tag">Open-Meteo</span>
               </div>
               <h3>Weather Intelligence</h3>
-              <p>Local agricultural weather forecasts paired with deterministic rules evaluating fungal infection and heat stress risks.</p>
-              <div className="tool-card-action">
-                Open full tool <ArrowRight size={13} />
+              <p>
+                Microclimate risk forecasting evaluating temperature, relative humidity, and rainfall
+                thresholds for fungal germination and heat stress.
+              </p>
+              <div className="tool-utility-action">
+                Open weather tool <ArrowRight size={12} />
               </div>
             </div>
-          </div>
 
-          {/* Tool 3: Fertilizer Planner (with Botanical sprig visibly beside outer right edge) */}
-          <div className="botanical-card-wrap">
-            <BotanicalLeaf position="beside-right" variant="side-sprig" />
-            <div className="tool-card" onClick={() => openTool("fertilizer")} role="button" tabIndex={0}>
-              <div className="tool-card-icon">
-                <FlaskConical size={19} />
+            {/* Tool 3: Fertilizer Planner */}
+            <div
+              className="tool-utility-card"
+              onClick={() => openTool("fertilizer")}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="tool-utility-head">
+                <div className="tool-utility-icon">
+                  <FlaskConical size={18} />
+                </div>
+                <span className="tool-utility-tag">Per-Acre Rates</span>
               </div>
               <h3>Fertilizer Planner</h3>
-              <p>Agronomic per-acre lookup table calculating exact fertilizer requirements, dosage, and indicative costs for your crop deficiency.</p>
-              <div className="tool-card-action">
-                Open full tool <ArrowRight size={13} />
+              <p>
+                Agronomic lookup table calculating exact nutrient deficiency dosages, required bag quantities,
+                and indicative input costs for your acreage.
+              </p>
+              <div className="tool-utility-action">
+                Open planner <ArrowRight size={12} />
               </div>
             </div>
-          </div>
 
-          {/* Tool 4: Product Verification (with Botanical blossom sprig peeking outer bottom left) */}
-          <div className="botanical-card-wrap">
-            <BotanicalLeaf position="outer-bottom-left" variant="blossom-sprig" />
-            <div className="tool-card" onClick={() => openTool("products")} role="button" tabIndex={0}>
-              <div className="tool-card-icon">
-                <ShieldCheck size={19} />
+            {/* Tool 4: Product Verification */}
+            <div
+              className="tool-utility-card"
+              onClick={() => openTool("products")}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="tool-utility-head">
+                <div className="tool-utility-icon">
+                  <ShieldCheck size={18} />
+                </div>
+                <span className="tool-utility-tag">SQLite Registry</span>
               </div>
               <h3>Product Verification</h3>
-              <p>Validate packaging QR codes and product serial numbers against the local SQLite registry to verify genuine agricultural inputs.</p>
-              <div className="tool-card-action">
-                Open full tool <ArrowRight size={13} />
+              <p>
+                Verify packaging QR labels and product serial codes against the local registry
+                to protect against counterfeit agricultural chemicals and seeds.
+              </p>
+              <div className="tool-utility-action">
+                Verify packaging <ArrowRight size={12} />
               </div>
             </div>
-          </div>
 
-          {/* Tool 5: Government Schemes (with Botanical flowering stem peeking outer bottom right) */}
-          <div className="botanical-card-wrap">
-            <BotanicalLeaf position="outer-bottom-right" variant="flowering-stem" />
-            <div className="tool-card" onClick={() => openTool("schemes")} role="button" tabIndex={0}>
-              <div className="tool-card-icon">
-                <BookOpen size={19} />
+            {/* Tool 5: Government Schemes */}
+            <div
+              className="tool-utility-card"
+              onClick={() => openTool("schemes")}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="tool-utility-head">
+                <div className="tool-utility-icon">
+                  <BookOpen size={18} />
+                </div>
+                <span className="tool-utility-tag">Subsidies</span>
               </div>
               <h3>Government Schemes</h3>
-              <p>Match your farm land size, state, crop, and support category with verified government subsidies and official application links.</p>
-              <div className="tool-card-action">
-                Open full tool <ArrowRight size={13} />
+              <p>
+                Match farm acreage, state, crop, and support categories with verified central and state
+                public subsidy schemes and official portals.
+              </p>
+              <div className="tool-utility-action">
+                Find subsidies <ArrowRight size={12} />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. HOW AGRIVISION WORKS */}
+      {/* 3. HOW AGRIVISION WORKS — ARCHITECTURAL PROCESS TIMELINE */}
       <section id="workflow" className="homepage-section">
         <div className="section-head">
           <div>
@@ -259,40 +580,55 @@ function ContinuousHomePage({
           <p>Transparent, model-backed reasoning from input to field recommendation.</p>
         </div>
 
-        <div className="workflow-grid">
-          {/* Step 1 with Botanical accent visibly beside left side */}
+        <div className="workflow-timeline">
+          {/* Step 1 with Botanical accent peeking outer top left */}
           <div className="botanical-card-wrap">
-            <BotanicalLeaf position="beside-left" variant="side-sprig" />
-            <div className="workflow-step">
-              <div className="workflow-step-num">01</div>
+            <BotanicalLeaf position="outer-top-left" variant="side-sprig" />
+            <div className="workflow-timeline-step">
+              <div className="workflow-num-row">
+                <span className="workflow-num-large">01</span>
+                <span className="workflow-step-badge">Field Ingestion</span>
+              </div>
               <h4>Observe &amp; Capture</h4>
-              <p>Submit close-up leaf photographs, enter observed visual symptoms, or specify farm coordinates for microclimate intelligence.</p>
+              <p>
+                Submit close-up leaf photographs, enter observed visual symptoms, or specify farm coordinates
+                for local microclimate intelligence.
+              </p>
             </div>
           </div>
 
-          {/* Step 2 with Botanical accent peeking outer top right */}
-          <div className="botanical-card-wrap">
-            <BotanicalLeaf position="outer-top-right" variant="flower-branch" />
-            <div className="workflow-step">
-              <div className="workflow-step-num">02</div>
-              <h4>Verified Engines</h4>
-              <p>Fine-tuned MobileNetV2 CNN, Random Forest symptom classifier, Open-Meteo risk rules, and SQLite registries process your query.</p>
+          {/* Step 2 */}
+          <div className="workflow-timeline-step">
+            <div className="workflow-num-row">
+              <span className="workflow-num-large">02</span>
+              <span className="workflow-step-badge">Engine Evaluation</span>
             </div>
+            <h4>Deterministic &amp; Neural Inference</h4>
+            <p>
+              Fine-tuned MobileNetV2 CNN, Random Forest symptom classifier, Open-Meteo risk rules, and SQLite
+              registries process your query simultaneously.
+            </p>
           </div>
 
-          {/* Step 3 with Botanical accent visibly beside right side */}
+          {/* Step 3 with Botanical accent beside right */}
           <div className="botanical-card-wrap">
             <BotanicalLeaf position="beside-right" variant="side-bloom" />
-            <div className="workflow-step">
-              <div className="workflow-step-num">03</div>
+            <div className="workflow-timeline-step">
+              <div className="workflow-num-row">
+                <span className="workflow-num-large">03</span>
+                <span className="workflow-step-badge">Field Action</span>
+              </div>
               <h4>Actionable Guidance</h4>
-              <p>Receive Grad-CAM visual heatmaps, per-acre fertilizer dosage calculations, and verified official scheme links.</p>
+              <p>
+                Receive Grad-CAM visual heatmaps, per-acre fertilizer dosage calculations, and verified official
+                scheme links for immediate farm care.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. CROP INTELLIGENCE — FARMER-FOCUSED CROP HEALTH INSIGHTS */}
+      {/* 4. CROP INTELLIGENCE — FARMER-FOCUSED CROP HEALTH INSIGHTS WITH WHEAT FIELD PHOTOGRAPHY */}
       <section id="crop-intelligence" className="homepage-section">
         <div className="section-head">
           <div>
@@ -303,50 +639,74 @@ function ContinuousHomePage({
         </div>
 
         <div className="botanical-card-wrap">
-          {/* Dual corner botanical framing with flower branch and blossom sprig */}
           <BotanicalLeaf position="outer-top-right" variant="flower-branch" />
           <BotanicalLeaf position="outer-bottom-left" variant="blossom-sprig" />
 
-          <div className="feature-spotlight">
-            <div className="feature-spotlight-copy">
-              <h3>Turn crop signs into clearer insights</h3>
-              <p>
-                Explore potential plant health issues from leaf photographs or observed symptoms to guide timely field care.
-              </p>
-
-              <div className="feature-key-points">
-                <div className="feature-key-point">
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Image-based assessment</strong> — Upload leaf photos to identify potential health issues.
-                  </span>
-                </div>
-                <div className="feature-key-point">
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Symptom-based guidance</strong> — Share observed field symptoms when photos are unavailable.
-                  </span>
-                </div>
-                <div className="feature-key-point">
-                  <CheckCircle2 size={16} />
-                  <span>
-                    <strong>Visual context</strong> — Inspect highlighted regions that influenced the model's assessment.
-                  </span>
-                </div>
+          <div className="crop-editorial-spread">
+            {/* Left: Editorial Narrative + Wheat Field Photography */}
+            <div className="crop-editorial-left">
+              <div className="crop-editorial-photo-box">
+                <figure className="editorial-photo-figure">
+                  <div className="editorial-photo-frame">
+                    <img
+                      src="/images/wheat-field.jpg"
+                      alt="Golden rye and wheat field with mature grain ears ready for scouting"
+                      className="editorial-photo-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <figcaption className="editorial-photo-caption">
+                    <span>
+                      <Camera size={12} /> Cereal grain scouting &amp; early rust detection
+                    </span>
+                    <span className="editorial-photo-source">Pixabay</span>
+                  </figcaption>
+                </figure>
               </div>
 
-              <Button onClick={() => openTool("doctor")}>
-                Explore Crop Doctor <ArrowRight size={15} />
-              </Button>
+              <div className="crop-editorial-narrative">
+                <h3>Turn crop signs into clearer insights</h3>
+                <p>
+                  Explore potential plant health issues from leaf photographs or observed symptoms
+                  to guide timely field care before disease spreads across your acreage.
+                </p>
+
+                <div className="feature-key-points">
+                  <div className="feature-key-point">
+                    <CheckCircle2 size={16} />
+                    <span>
+                      <strong>Image-based assessment</strong> — Upload leaf photos to identify potential health issues.
+                    </span>
+                  </div>
+                  <div className="feature-key-point">
+                    <CheckCircle2 size={16} />
+                    <span>
+                      <strong>Symptom-based guidance</strong> — Share observed field symptoms when photos are unavailable.
+                    </span>
+                  </div>
+                  <div className="feature-key-point">
+                    <CheckCircle2 size={16} />
+                    <span>
+                      <strong>Visual context</strong> — Inspect highlighted regions that influenced the model&apos;s assessment.
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Button onClick={() => openTool("doctor")}>
+                    Explore Crop Doctor <ArrowRight size={15} />
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            {/* Farmer-focused crop health inspection preview - clean dedicated presentation */}
+            {/* Right: Farmer-focused crop health inspection preview - clean dedicated presentation */}
             <CropHealthInspectionPreview />
           </div>
         </div>
       </section>
 
-      {/* 5. WEATHER & FERTILIZER SPOTLIGHT */}
+      {/* 5. WEATHER & FERTILIZER SPOTLIGHT WITH FARMLAND BANNER & TRACTOR FERTILIZER SPREADING */}
       <section id="weather-fertilizer" className="homepage-section">
         <div className="section-head">
           <div>
@@ -356,20 +716,46 @@ function ContinuousHomePage({
           <p>Deterministic calculations that safeguard yields and prevent over-fertilization.</p>
         </div>
 
-        <div className="twin-pillars-grid">
-          {/* Weather Pillar with Botanical accent beside left edge and outer top right */}
+        {/* Wide Landscape Composition: Farmland Banner (Down To Earth / iStock) */}
+        <div className="landscape-panorama-wrap">
+          <figure className="editorial-photo-figure">
+            <div className="landscape-panorama-frame">
+              <span className="landscape-panorama-badge">
+                <MapPin size={12} /> Field Intelligence &amp; Topography
+              </span>
+              <img
+                src="/images/farmland-banner.jpg"
+                alt="Agricultural farmland landscape with crop fields and contoured topography"
+                className="landscape-panorama-img"
+                loading="lazy"
+              />
+            </div>
+            <figcaption className="editorial-photo-caption">
+              <span>
+                <Camera size={12} /> Agricultural field landscape &amp; terrain monitoring
+              </span>
+              <span className="editorial-photo-source">Down To Earth / iStock</span>
+            </figcaption>
+          </figure>
+        </div>
+
+        {/* Asymmetric 2-Column Split: Weather Intelligence & Cultivation / Fertilizer */}
+        <div className="weather-cultivation-split">
+          {/* Weather Pillar */}
           <div className="botanical-card-wrap">
             <BotanicalLeaf position="beside-left" variant="side-bloom" />
-            <BotanicalLeaf position="outer-top-right" variant="flower-branch" />
-            <div className="pillar-card">
-              <span className="eyebrow">
-                <CloudSun size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> Open-Meteo Integration
-              </span>
-              <h3>Local weather risk intelligence</h3>
-              <p>
-                Monitors ambient temperature, relative humidity, and precipitation against agronomic thresholds
-                to flag elevated fungal infection risks and extreme heat stress before they spread.
-              </p>
+            <div className="weather-module-card">
+              <div>
+                <span className="eyebrow">
+                  <CloudSun size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> Open-Meteo Integration
+                </span>
+                <h3>Local weather risk intelligence</h3>
+                <p>
+                  Monitors ambient temperature, relative humidity, and precipitation against agronomic thresholds
+                  to flag elevated fungal infection risks and extreme heat stress before they spread.
+                </p>
+              </div>
+
               <div className="pillar-preview-box">
                 <div className="preview-stat-label">Calculated Signals</div>
                 <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
@@ -378,25 +764,30 @@ function ContinuousHomePage({
                   <span className="status-pill">Manual observation mode</span>
                 </div>
               </div>
-              <Button variant="secondary" onClick={() => openTool("weather")}>
-                Open Weather tool <ArrowRight size={14} />
-              </Button>
+
+              <div>
+                <Button variant="secondary" onClick={() => openTool("weather")}>
+                  Open Weather tool <ArrowRight size={14} />
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Fertilizer Pillar with Botanical accent beside right edge and outer bottom left */}
+          {/* Fertilizer & Cultivation Guidance Pillar */}
           <div className="botanical-card-wrap">
             <BotanicalLeaf position="beside-right" variant="side-sprig" />
-            <BotanicalLeaf position="outer-bottom-left" variant="flowering-stem" />
-            <div className="pillar-card">
-              <span className="eyebrow">
-                <FlaskConical size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> Per-Acre Lookup Table
-              </span>
-              <h3>Deterministic fertilizer planner</h3>
-              <p>
-                Eliminates guesswork with verified per-acre agronomic lookup rates. Select your crop
-                and deficiency to receive precise nutrient quantities and indicative cost estimates.
-              </p>
+            <div className="cultivation-module-card">
+              <div>
+                <span className="eyebrow">
+                  <FlaskConical size={13} style={{ verticalAlign: -2, marginRight: 4 }} /> Per-Acre Lookup Table
+                </span>
+                <h3>Deterministic fertilizer planner</h3>
+                <p>
+                  Eliminates guesswork with verified per-acre agronomic lookup rates. Select your crop
+                  and deficiency to receive precise nutrient quantities and indicative cost estimates.
+                </p>
+              </div>
+
               <div className="pillar-preview-box">
                 <div className="preview-stat-label">Calculated Metrics</div>
                 <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
@@ -405,9 +796,12 @@ function ContinuousHomePage({
                   <span className="status-pill">Cost in INR (₹)</span>
                 </div>
               </div>
-              <Button variant="secondary" onClick={() => openTool("fertilizer")}>
-                Open Fertilizer Planner <ArrowRight size={14} />
-              </Button>
+
+              <div>
+                <Button variant="secondary" onClick={() => openTool("fertilizer")}>
+                  Open Fertilizer Planner <ArrowRight size={14} />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -572,7 +966,7 @@ function ContinuousHomePage({
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -583,6 +977,7 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileToolsExpanded, setMobileToolsExpanded] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const lenisRef = useRef<Lenis | null>(null);
 
   // Health check on mount
   useEffect(() => {
@@ -593,64 +988,85 @@ export default function App() {
     return () => controller.abort();
   }, []);
 
-  // Section Observer for active navbar highlighting
+  // Initialize Lenis Smooth Scrolling and synchronize with GSAP ScrollTrigger
   useEffect(() => {
-    if (currentView !== "home") return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      return;
+    }
 
-    const sectionIds = [
-      "overview",
-      "tools",
-      "workflow",
-      "crop-intelligence",
-      "weather-fertilizer",
-      "verification-schemes",
-      "about",
-    ];
+    const lenis = new Lenis({
+      lerp: 0.072, // Signature butter-smooth continuous momentum interpolation
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 0.95,
+      touchMultiplier: 1.25,
+      autoResize: true,
+    });
 
-    const sectionElements = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => Boolean(el));
+    lenisRef.current = lenis;
 
-    if (sectionElements.length === 0) return;
+    // Synchronize Lenis with GSAP ScrollTrigger official pattern
+    lenis.on("scroll", ScrollTrigger.update);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries.filter((e) => e.isIntersecting);
-        if (visibleEntries.length > 0) {
-          visibleEntries.sort(
-            (a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top)
-          );
-          setActiveSection(visibleEntries[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-20% 0px -40% 0px",
-        threshold: [0, 0.2, 0.5, 0.8],
-      }
-    );
+    const tickerCallback = (time: number) => {
+      lenis.raf(time * 1000);
+    };
 
-    sectionElements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    gsap.ticker.add(tickerCallback);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(tickerCallback);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Refresh ScrollTrigger and scroll to top on route change
+  useEffect(() => {
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
+
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 120);
+
+    return () => clearTimeout(timer);
   }, [currentView]);
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(el, {
+        offset: -90,
+        duration: 1.35,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
+    } else {
+      const headerOffset = 90;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const navigateToSection = (sectionId: string) => {
     if (currentView !== "home") {
       setCurrentView("home");
       setTimeout(() => {
-        const el = document.getElementById(sectionId);
-        if (el) {
-          const headerOffset = 90;
-          const pos = el.getBoundingClientRect().top + window.pageYOffset - headerOffset;
-          window.scrollTo({ top: pos, behavior: "smooth" });
-        }
-      }, 80);
+        scrollToSection(sectionId);
+      }, 120);
     } else {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        const headerOffset = 90;
-        const pos = el.getBoundingClientRect().top + window.pageYOffset - headerOffset;
-        window.scrollTo({ top: pos, behavior: "smooth" });
-      }
+      scrollToSection(sectionId);
     }
     setActiveSection(sectionId);
     setMobileNavOpen(false);
@@ -661,14 +1077,22 @@ export default function App() {
     setCurrentView(tool);
     setMobileNavOpen(false);
     setMegaMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
   };
 
   const returnToHome = () => {
     setCurrentView("home");
     setMobileNavOpen(false);
     setMegaMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
   };
 
   return (
@@ -898,7 +1322,12 @@ export default function App() {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {currentView === "home" ? (
-              <ContinuousHomePage openTool={openTool} health={health} />
+              <ContinuousHomePage
+                openTool={openTool}
+                health={health}
+                onActiveSection={setActiveSection}
+                scrollToSection={scrollToSection}
+              />
             ) : null}
             {currentView === "doctor" ? <CropDoctor /> : null}
             {currentView === "weather" ? <WeatherPage /> : null}
