@@ -7,10 +7,14 @@ Image validation, EXIF normalization, resizing and leaf heuristics.
 from __future__ import annotations
 
 import io
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
+import cv2
+import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from utils.helpers import is_probably_leaf_image
+
+MAX_IMAGE_PIXELS = 40_000_000
 
 
 def load_image_safely(data: bytes | io.BytesIO | Image.Image) -> Tuple[Optional[Image.Image], Optional[str]]:
@@ -20,10 +24,12 @@ def load_image_safely(data: bytes | io.BytesIO | Image.Image) -> Tuple[Optional[
     """
     if isinstance(data, Image.Image):
         try:
+            if data.width * data.height > MAX_IMAGE_PIXELS:
+                return None, "This image is too large to process. Please upload a smaller photo."
             img = ImageOps.exif_transpose(data)
             return img.convert("RGB"), None
-        except Exception:
-            return data.convert("RGB"), None
+        except Exception as exc:
+            return None, f"Failed to process image: {exc}"
 
     try:
         if isinstance(data, (bytes, bytearray)):
@@ -31,6 +37,8 @@ def load_image_safely(data: bytes | io.BytesIO | Image.Image) -> Tuple[Optional[
         else:
             stream = data
         image = Image.open(stream)
+        if image.width * image.height > MAX_IMAGE_PIXELS:
+            return None, "This image is too large to process. Please upload a smaller photo."
         image.load()
         try:
             image = ImageOps.exif_transpose(image)
@@ -50,6 +58,32 @@ def resize_thumbnail(image: Image.Image, max_dim: int = 800) -> Image.Image:
     ratio = max_dim / max(image.size)
     new_size = (int(image.width * ratio), int(image.height * ratio))
     return image.resize(new_size, Image.Resampling.LANCZOS)
+
+
+def assess_image_quality(image: Image.Image) -> Dict[str, object]:
+    """Report simple, non-diagnostic photo limitations without rejecting the image."""
+    issues: List[str] = []
+    if min(image.size) < 96:
+        issues.append("The image is small, so fine details may be hard to assess.")
+
+    sample = resize_thumbnail(image.convert("RGB"), max_dim=256)
+    grayscale = cv2.cvtColor(np.asarray(sample), cv2.COLOR_RGB2GRAY)
+    mean_brightness = float(np.mean(grayscale))
+    if mean_brightness < 35:
+        issues.append("The photo is quite dark; brighter, even lighting may help.")
+    elif mean_brightness > 235:
+        issues.append("The photo is very bright; softer lighting may show more detail.")
+
+    detail_score = float(cv2.Laplacian(grayscale, cv2.CV_64F).var())
+    if detail_score < 8:
+        issues.append("The photo has little fine detail; move closer and tap to focus.")
+
+    return {
+        "width": image.width,
+        "height": image.height,
+        "issues": issues,
+        "is_suitable": not issues,
+    }
 
 
 def image_to_base64_png(image: Image.Image) -> str:

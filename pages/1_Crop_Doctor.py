@@ -93,7 +93,7 @@ with col_upload:
         """
         <div style="background:#FFFFFF;border:1px solid rgba(27,61,38,0.12);border-radius:14px;padding:1.4rem;box-shadow:0 4px 16px rgba(0,0,0,0.03);margin-bottom:14px;">
             <div style="font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:1.25rem;color:#1B3D26;margin-bottom:4px;">1. Select Plant Part & Crop Category</div>
-            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Choose the plant anatomical part and crop species to align the diagnostic engine with genuine model capabilities.</div>
+            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Choose the crop and plant part shown. Only supported leaf photos use the leaf classifier.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -192,7 +192,7 @@ with col_upload:
         f"""
         <div style="background:#FFFFFF;border:1px solid rgba(27,61,38,0.12);border-radius:14px;padding:1.4rem;box-shadow:0 4px 16px rgba(0,0,0,0.03);">
             <div style="font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:1.25rem;color:#1B3D26;margin-bottom:4px;">2. Upload a Plant Photo</div>
-            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Leaves, fruit, vegetables, stems, or whole plants (JPEG, PNG, WebP · max 8 MiB).</div>
+            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Leaves, fruit, vegetables, stems, roots, flowers, seedlings, or whole plants (JPEG, PNG, WebP · max 8 MiB).</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -307,6 +307,9 @@ with col_preview:
             "field": "🌾",
             "whole": "🪴",
             "stem": "🪴",
+            "root": "🌱",
+            "flower": "🌼",
+            "seedling": "🌱",
         }
         chosen_icon = "🍃"
         for k, v in icon_map.items():
@@ -361,6 +364,7 @@ if diag is not None and diag.get("assessment_report"):
             tone="warn",
         )
     with summary_col:
+        st.caption(report.get("status", "Assessment"))
         st.subheader("What We Observed")
         st.write(
             f"**Crop:** {report.get('crop') or 'Not identified'} "
@@ -368,10 +372,16 @@ if diag is not None and diag.get("assessment_report"):
         )
         st.write(f"**Plant part:** {report.get('plant_part') or 'Not identified'}")
         st.write(f"**Assessment type:** {report.get('assessment_type')}")
-        if report.get("confidence") is not None:
-            st.write(f"**Model confidence:** {report['confidence'] * 100:.1f}%")
         if report.get("visible_symptoms"):
             st.write(report["visible_symptoms"])
+        if report.get("image_quality"):
+            quality_issues = report["image_quality"].get("issues", [])
+            if quality_issues:
+                st.caption("Photo note: " + " ".join(quality_issues))
+            st.caption(
+                f"Photo size: {report['image_quality']['width']} × "
+                f"{report['image_quality']['height']} pixels"
+            )
         if report.get("reported_symptoms"):
             st.write(f"**You described:** {report['reported_symptoms']}")
         if report.get("observed_plant_parts"):
@@ -388,16 +398,26 @@ if diag is not None and diag.get("assessment_report"):
                 ),
                 tone="warn",
             )
-        if img_res and not img_res.get("error") and img_res.get("pretty_label"):
+        st.subheader("Assessment Findings")
+        model_findings = report.get("model_findings")
+        if model_findings:
             st.write(
-                f"**Leaf model result:** {img_res['pretty_label']} "
-                "(model prediction, not confirmation)"
+                f"**Leaf model suggestion:** {model_findings['label']}"
+            )
+            st.write(
+                f"**CNN output score:** {model_findings['score'] * 100:.1f}% "
+                "(not calibrated disease certainty)"
+            )
+            st.caption(model_findings["scope"])
+        elif report.get("visible_symptoms"):
+            st.caption(
+                "Visible observations are not a disease diagnosis. No validated model covers this image category."
             )
 
         st.subheader("Possible Causes")
         if report.get("possible_causes"):
             for cause in report["possible_causes"]:
-                st.write(f"- {cause}")
+                st.write(f"- {cause['name']}: {cause['why_it_may_fit']}")
         else:
             st.write(report.get("cause_note") or "There is not enough evidence to suggest a cause.")
 
@@ -409,6 +429,13 @@ if diag is not None and diag.get("assessment_report"):
         st.write(report.get("further_help"))
         if report.get("preliminary_note"):
             st.caption(report["preliminary_note"])
+        st.subheader("References")
+        references = report.get("references", [])
+        if references:
+            for reference in references:
+                st.markdown(f"- [{reference['title']}]({reference['url']})")
+        else:
+            st.caption("No crop-specific reference was used to generate this assessment.")
 
     with image_col:
         if st.session_state.crop_image is not None:
@@ -465,7 +492,18 @@ if diag is not None and diag.get("assessment_report"):
                     with col:
                         st.image(gc[key], caption=caption, use_container_width=True)
 
+    with st.expander("Interactive 3D plant model"):
+        st.caption("Rotate and zoom the plant model for a general specimen view.")
+        render_3d_plant_scene(height=340, view_mode="plant", auto_rotate=False)
+
 # Legacy results are rendered only for pre-report session state.
+if diag is not None and not diag.get("assessment_report"):
+    render_alert_box(
+        "This saved report predates the current assessment format. Run the assessment again to refresh it.",
+        tone="info",
+    )
+    diag = None
+
 if diag is not None and not diag.get("assessment_report"):
     render_section_title("Diagnostic Assessment & Findings", icon="🔬")
 

@@ -30,7 +30,12 @@ from utils.gemini import (
     generate_visual_observations,
     recommendation_for_image,
 )
-from utils.image_processing import check_leaf_suitability, load_image_safely, resize_thumbnail
+from utils.image_processing import (
+    assess_image_quality,
+    check_leaf_suitability,
+    load_image_safely,
+    resize_thumbnail,
+)
 
 __all__ = [
     "EXTENDED_AGRICULTURAL_CROPS",
@@ -378,6 +383,12 @@ def check_diagnostic_eligibility(
         category_key = "Vegetable"
     elif "field" in part_clean.lower():
         category_key = "Field Crop"
+    elif "root" in part_clean.lower():
+        category_key = "Root"
+    elif "flower" in part_clean.lower():
+        category_key = "Flower"
+    elif "seedling" in part_clean.lower():
+        category_key = "Seedling"
     elif "whole" in part_clean.lower() or "stem" in part_clean.lower():
         category_key = "Whole Plant"
     elif "leaf" in part_clean.lower() or "foliage" in part_clean.lower():
@@ -395,6 +406,22 @@ def check_diagnostic_eligibility(
     }
 
 
+def _crop_names_match(selected: Optional[str], predicted: Optional[str]) -> bool:
+    if not selected or not predicted:
+        return True
+
+    def normalize(name: str) -> str:
+        return "".join(character for character in name.lower() if character.isalnum())
+
+    aliases = {
+        "pepperbell": "bellpepper",
+        "orangecitrus": "orange",
+    }
+    return aliases.get(normalize(selected), normalize(selected)) == aliases.get(
+        normalize(predicted), normalize(predicted)
+    )
+
+
 def run_crop_diagnosis(
     image: Optional[Image.Image] = None,
     symptom_text: Optional[str] = None,
@@ -405,12 +432,14 @@ def run_crop_diagnosis(
     """
     Run the validated leaf CNN only for supported crop leaves. For other image
     categories, return a preliminary report without making a CNN prediction.
+    Visual photo review is optional and requires explicit user consent.
     """
     eligibility = check_diagnostic_eligibility(plant_part=plant_part, crop=crop)
     image_result: Optional[Dict[str, Any]] = None
     leaf_warning: Optional[str] = None
     visual_review: Optional[Dict[str, Any]] = None
     visual_review_error: Optional[str] = None
+    image_quality = assess_image_quality(image) if image is not None else None
 
     if image is not None:
         if eligibility["can_run_cnn"]:
@@ -419,41 +448,62 @@ def run_crop_diagnosis(
                 leaf_warning = warning
 
             # Efficiently downsample large image before inference
-            scaled_img = resize_thumbnail(image, max_dim=800)
-            try:
-                model, class_names, weights_path = get_cached_vision_model()
-                image_result = crop_doctor.predict_from_image(
-                    image=scaled_img,
-                    model=model,
-                    class_names=class_names,
-                    weights_path=weights_path,
-                    top_k=3,
+            if min(image.size) < 64:
+                leaf_warning = (
+                    "This photo is too small to assess leaf details. Upload a larger, close-up image."
                 )
-            except Exception as exc:
-                image_result = crop_doctor._empty_result(
-                    f"Vision model unavailable: {exc}. Please verify model weights or provide field symptoms."
-                )
+            else:
+                scaled_img = resize_thumbnail(image, max_dim=800)
+                try:
+                    model, class_names, weights_path = get_cached_vision_model()
+                    image_result = crop_doctor.predict_from_image(
+                        image=scaled_img,
+                        model=model,
+                        class_names=class_names,
+                        weights_path=weights_path,
+                        top_k=3,
+                    )
+                except Exception as exc:
+                    image_result = crop_doctor._empty_result(
+                        f"Vision model unavailable: {exc}. Please verify model weights or provide field symptoms."
+                    )
         else:
             # Model cannot diagnose this category - do not run CNN to prevent false predictions
             image_result = None
             if use_ai_visual_review:
                 try:
+                    crop_hint = crop
+                    if not crop_hint or any(
+                        marker in crop_hint.lower()
+                        for marker in ("auto-detect", "general crop", "select crop")
+                    ):
+                        crop_hint = None
                     visual_review = generate_visual_observations(
                         resize_thumbnail(image, max_dim=900),
-                        crop=crop if crop and "auto-detect" not in crop.lower() else None,
+                        crop=crop_hint,
                     )
                 except GeminiError as exc:
                     visual_review_error = str(exc)
 
     symptom_result: Optional[Dict[str, Any]] = None
     cleaned_symptoms = (symptom_text or "").strip()
+    selected_crop = (
+        crop.strip()
+        if crop and "auto-detect" not in crop.lower() and "general crop" not in crop.lower()
+        else None
+    )
     if cleaned_symptoms:
         symptom_result = predict_symptoms(cleaned_symptoms)
 
     recommendations: List[str] = []
-    image_prediction = bool(
+    has_image_output = bool(
         image_result and not image_result.get("error") and image_result.get("label")
     )
+    crop_matches_model = _crop_names_match(
+        selected_crop,
+        image_result.get("crop") if image_result else None,
+    )
+    image_prediction = has_image_output and crop_matches_model
 
     if eligibility["can_run_cnn"]:
         combined = crop_doctor.combine_signals(image_result, symptom_result)
@@ -502,11 +552,6 @@ def run_crop_diagnosis(
             "prompt": None,
         }
 
-    selected_crop = (
-        crop.strip()
-        if crop and "auto-detect" not in crop.lower() and "general crop" not in crop.lower()
-        else None
-    )
     crop_name = (
         selected_crop
         or (image_result.get("crop") if image_prediction else None)
@@ -517,6 +562,10 @@ def run_crop_diagnosis(
         assessment_type = "CNN diagnosis"
         visible_symptoms = None
         confidence = float(image_result["confidence"])
+    elif has_image_output and not crop_matches_model:
+        assessment_type = "Model result does not match selected crop"
+        visible_symptoms = None
+        confidence = None
     elif image is not None:
         assessment_type = (
             "Preliminary visual assessment (AI-assisted)"
@@ -547,32 +596,67 @@ def run_crop_diagnosis(
         )
         confidence = None
 
-    possible_causes = (
-        [f"CNN model prediction: {image_result.get('pretty_label') or image_result['label']}"]
-        if image_prediction
-        else []
+    model_findings = (
+        {
+            "label": image_result.get("pretty_label") or image_result["label"],
+            "score": float(image_result["confidence"]),
+            "scope": (
+                "The model result does not match the crop you selected; confirm the crop before using it."
+                if has_image_output and not crop_matches_model
+                else "Supported leaf-class prediction; not laboratory confirmation."
+            ),
+        }
+        if has_image_output
+        else None
     )
-    cause_note = (
-        "This is a model prediction, not a confirmed diagnosis."
-        if image_prediction
-        else (
-            "The cause cannot be determined from this image alone. Similar marks can have "
-            "different causes, and the affected fruit and foliage may need to be assessed separately."
-            if image is not None
-            else "There is not enough information to suggest a cause."
+    if image_prediction:
+        cause_note = (
+            "The model finding is a supported leaf-class prediction, not confirmation of the cause."
         )
-    )
-    next_steps = []
-    if image_prediction and confidence >= crop_doctor.THRESHOLD:
-        image_action = recommendation_for_image(image_result)
-        if image_action:
-            next_steps.append(image_action)
-    next_steps.extend(
-        [
-            "Photograph affected areas clearly and check whether symptoms are spreading.",
-            "Inspect nearby plants for similar changes and avoid treatment until the cause is clearer.",
-        ]
-    )
+    elif has_image_output and not crop_matches_model:
+        cause_note = (
+            "The model output names a different crop from the one selected. Check the crop and "
+            "plant part, then assess again; this result is not a diagnosis for the selected crop."
+        )
+    elif visual_review and not visual_review.get("observations"):
+        cause_note = (
+            "The photo did not show enough clear detail to suggest a cause. A closer photo may help."
+        )
+    elif image_quality and min(image_quality["width"], image_quality["height"]) < 64:
+        cause_note = (
+            "The photo is too small to assess. Upload a closer, higher-resolution image."
+        )
+    elif image is not None:
+        cause_note = (
+            "The cause cannot be determined from this image alone. Similar marks can have "
+            "different causes, and fruit and foliage should be assessed separately."
+        )
+    else:
+        cause_note = "There is not enough information to suggest a cause."
+    possible_causes: List[Dict[str, str]] = []
+    next_steps = [
+        "Photograph affected areas clearly and check whether symptoms are spreading.",
+        "Inspect nearby plants for similar changes and avoid treatment until the cause is clearer.",
+    ]
+    if image_prediction:
+        next_steps.append(
+            "Compare this model suggestion with other affected leaves and confirm with a local adviser before treatment."
+        )
+
+    if image_prediction:
+        status = "Supported model assessment"
+    elif has_image_output and not crop_matches_model:
+        status = "More information needed"
+    elif visual_review and visual_review.get("observations"):
+        status = "Preliminary visual assessment"
+    elif image is not None and image_quality and min(
+        image_quality["width"], image_quality["height"]
+    ) < 64:
+        status = "More information needed"
+    elif image is not None and (visual_review_error or not symptom_description):
+        status = "More information needed"
+    else:
+        status = "Preliminary assessment"
     assessment_report = {
         "crop": crop_name,
         "crop_basis": (
@@ -595,10 +679,14 @@ def run_crop_diagnosis(
         "reported_symptoms": symptom_description,
         "observed_plant_parts": visual_review.get("plant_parts", []) if visual_review else [],
         "assessment_type": assessment_type,
-        "confidence": confidence,
+        "status": status,
+        "model_findings": model_findings,
+        "model_score": confidence,
         "possible_causes": possible_causes,
         "cause_note": cause_note,
         "next_steps": next_steps,
+        "references": [],
+        "image_quality": image_quality,
         "further_help": (
             "Share clear photos of both sides of affected leaves and the full fruit, including where "
             "each mark is located. Note when symptoms began, how quickly they are changing, and recent "

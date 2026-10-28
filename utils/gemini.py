@@ -31,6 +31,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -184,35 +185,17 @@ def generate_visual_observations(image: Any, crop: Optional[str] = None) -> Dict
         "features plainly visible in the image. An image observation is not a diagnosis."
     )
 
-    first_error = "No compatible Google AI SDK is installed."
     try:
         from google import genai
         from google.genai import types
-
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model=get_model_name(),
-            contents=[
-                prompt,
-                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-            ],
-            config={
-                "system_instruction": system_instruction,
-                "temperature": 0.1,
-                "response_mime_type": "application/json",
-            },
-        )
-        response_text = (getattr(response, "text", None) or "").strip()
-        if not response_text:
-            raise GeminiError("Photo review returned an empty response.")
-    except GeminiError:
-        raise
-    except Exception as exc:
-        first_error = f"{type(exc).__name__}: {exc}"
+    except ImportError:
         try:
             import google.generativeai as legacy
             from PIL import Image
+        except ImportError as exc:
+            raise GeminiError("Photo review is unavailable because no Google AI SDK is installed.") from exc
 
+        try:
             legacy.configure(api_key=api_key)
             model = legacy.GenerativeModel(
                 model_name=get_model_name(),
@@ -224,15 +207,29 @@ def generate_visual_observations(image: Any, crop: Optional[str] = None) -> Dict
             )
             photo = Image.open(io.BytesIO(image_bytes))
             response = model.generate_content([prompt, photo])
-            response_text = (getattr(response, "text", None) or "").strip()
-            if not response_text:
-                raise GeminiError("Photo review returned an empty response.")
-        except GeminiError:
-            raise
         except Exception as exc:
-            raise GeminiError(
-                f"Photo review failed ({first_error} | {type(exc).__name__}: {exc})"
-            ) from exc
+            raise GeminiError(f"Photo review failed: {type(exc).__name__}.") from exc
+    else:
+        try:
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model=get_model_name(),
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                ],
+                config={
+                    "system_instruction": system_instruction,
+                    "temperature": 0.1,
+                    "response_mime_type": "application/json",
+                },
+            )
+        except Exception as exc:
+            raise GeminiError(f"Photo review failed: {type(exc).__name__}.") from exc
+
+    response_text = (getattr(response, "text", None) or "").strip()
+    if not response_text:
+        raise GeminiError("Photo review returned an empty response.")
 
     try:
         result = json.loads(response_text)
@@ -255,10 +252,35 @@ def generate_visual_observations(image: Any, crop: Optional[str] = None) -> Dict
     ):
         raise GeminiError("Photo review returned invalid visible observations.")
 
+    diagnosis_terms = (
+        "disease",
+        "infection",
+        "infected",
+        "fungal",
+        "bacterial",
+        "viral",
+        "virus",
+        "blight",
+        "mildew",
+        "anthracnose",
+        "rot",
+        "pest",
+        "deficiency",
+        "caused by",
+        "due to",
+    )
+    clean_observations = [item.strip()[:240] for item in observations if item.strip()]
+    if any(
+        re.search(rf"\b{re.escape(term)}\b", observation.lower())
+        for observation in clean_observations
+        for term in diagnosis_terms
+    ):
+        raise GeminiError("Photo review returned a possible diagnosis instead of observations.")
+
     return {
         "crop": crop_result.strip()[:80] if crop_result else None,
-        "plant_parts": [part.strip()[:80] for part in plant_parts[:5]],
-        "observations": [item.strip()[:240] for item in observations[:8] if item.strip()],
+        "plant_parts": [part.strip()[:80] for part in plant_parts[:5] if part.strip()],
+        "observations": clean_observations[:8],
     }
 
 # Deterministic offline fallbacks (used when Gemini is unavailable)

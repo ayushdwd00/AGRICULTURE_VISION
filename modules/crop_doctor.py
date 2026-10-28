@@ -80,11 +80,15 @@ EXTENDED_AGRICULTURAL_CROPS: List[str] = [
     "Wheat",
     "Rice",
     "Cotton",
+    "Sugarcane",
+    "Pulses",
     "Mango",
     "Banana",
     "Onion",
     "Eggplant (Brinjal)",
+    "Chilli",
     "Cucumber",
+    "Cabbage",
     "Other / General Crop",
 ]
 
@@ -93,7 +97,12 @@ PLANT_PART_OPTIONS: List[str] = [
     "🍎 Fruit",
     "🥔 Vegetable / Tuber",
     "🌾 Field Crop",
-    "🪴 Whole Plant / Stem",
+    "🪴 Stem",
+    "🌱 Root",
+    "🌼 Flower",
+    "🌱 Seedling",
+    "🪴 Whole Plant",
+    "❔ Other / Not sure",
 ]
 
 __all__ = [
