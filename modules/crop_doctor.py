@@ -37,6 +37,7 @@ from utils.helpers import (
     IMAGE_SIZE,
     IMAGENET_MEAN,
     IMAGENET_STD,
+    MODELS_DIR,
     PRETRAINED_MODEL_PATH,
     UNCERTAIN_MESSAGE,
     confidence_band,
@@ -56,6 +57,44 @@ WEIGHTS_LABELS: Dict[str, str] = {
     "agrivision_cnn.pth": "Fine-tuned AgriVision model (agrivision_cnn.pth)",
     "mobilenetv2_plant.pth": "Pretrained MobileNetV2 (mobilenetv2_plant.pth)",
 }
+
+# Supported Crops and Plant Part categories for UI and diagnostic scope
+VERIFIED_VISION_CROPS: Dict[str, str] = {
+    "Apple": "Apple",
+    "Blueberry": "Blueberry",
+    "Cherry": "Cherry_(including_sour)",
+    "Corn (Maize)": "Corn_(maize)",
+    "Grape": "Grape",
+    "Orange (Citrus)": "Orange",
+    "Peach": "Peach",
+    "Pepper (Bell)": "Pepper,_bell",
+    "Potato": "Potato",
+    "Raspberry": "Raspberry",
+    "Soybean": "Soybean",
+    "Squash": "Squash",
+    "Strawberry": "Strawberry",
+    "Tomato": "Tomato",
+}
+
+EXTENDED_AGRICULTURAL_CROPS: List[str] = [
+    "Wheat",
+    "Rice",
+    "Cotton",
+    "Mango",
+    "Banana",
+    "Onion",
+    "Eggplant (Brinjal)",
+    "Cucumber",
+    "Other / General Crop",
+]
+
+PLANT_PART_OPTIONS: List[str] = [
+    "🍃 Leaf / Foliage",
+    "🍎 Fruit",
+    "🥔 Vegetable / Tuber",
+    "🌾 Field Crop",
+    "🪴 Whole Plant / Stem",
+]
 
 # Model construction / loading
 
@@ -187,6 +226,46 @@ def augment_transform() -> transforms.Compose:
         ]
     )
 
+def ensure_model_weights(force_download: bool = False) -> Dict[str, Path]:
+    """
+    Ensure at least one verified model checkpoint is available in models/.
+    If neither agrivision_cnn.pth nor mobilenetv2_plant.pth is present on disk,
+    automatically download the verified pretrained checkpoint from Hugging Face.
+    """
+    weights = available_weights()
+    if weights and not force_download:
+        return weights
+
+    download_error: Optional[Exception] = None
+    try:
+        from training.download_model import (
+            HF_FILENAME,
+            HF_REPO_ID,
+            download_weights,
+            ensure_class_names,
+        )
+        ensure_class_names()
+        download_weights(force=force_download)
+        weights = available_weights()
+    except Exception as exc:
+        download_error = exc
+
+    if not weights:
+        err_msg = (
+            f"No model file found in '{MODELS_DIR}'.\n"
+            f"• Required artifacts: '{FINE_TUNED_MODEL_PATH.name}' (fine-tuned) or '{PRETRAINED_MODEL_PATH.name}' (baseline)\n"
+            f"• Verified download source: Hugging Face (Daksh159/plant-disease-mobilenetv2)\n"
+        )
+        if download_error:
+            err_msg += f"• Automatic download failed: {type(download_error).__name__}: {download_error}\n"
+        err_msg += (
+            "• Corrective action: Ensure internet access to Hugging Face or run: "
+            "python training/download_model.py"
+        )
+        raise FileNotFoundError(err_msg) from download_error
+
+    return weights
+
 def preprocess_image(
     image: "Image.Image | Any", device: Optional[torch.device] = None
 ) -> torch.Tensor:
@@ -194,6 +273,10 @@ def preprocess_image(
     device = device or get_device()
     if not isinstance(image, Image.Image):
         image = Image.fromarray(image).convert("RGB")
+    # Efficiently scale down large photos first while preserving aspect ratio
+    if max(image.size) > 1024:
+        ratio = 1024 / max(image.size)
+        image = image.resize((max(1, int(image.width * ratio)), max(1, int(image.height * ratio))), Image.Resampling.LANCZOS)
     return preprocess_transform()(image.convert("RGB")).unsqueeze(0).to(device)
 
 # Cached model access
@@ -241,15 +324,12 @@ def get_model(
     Return ``(model, class_names, weights_path)``.
 
     Preference order: ``models/agrivision_cnn.pth`` (fine-tuned) and then
-    ``models/mobilenetv2_plant.pth`` (pretrained baseline). Raises
-    ``FileNotFoundError`` only when *no* checkpoint exists - the Streamlit layer
-    turns that into a friendly message.
+    ``models/mobilenetv2_plant.pth`` (pretrained baseline). Automatically
+    downloads verified weights from Hugging Face if missing locally.
     """
     weights = available_weights()
     if not weights:
-        raise FileNotFoundError(
-            "No model file found in 'models/'. Run: python training/download_model.py"
-        )
+        weights = ensure_model_weights()
 
     if weights_name is None:
         if prefer_fine_tuned and FINE_TUNED_MODEL_PATH.name in weights:

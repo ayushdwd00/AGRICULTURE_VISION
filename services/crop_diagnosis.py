@@ -2,7 +2,8 @@
 services/crop_diagnosis.py
 ==========================
 Service managing crop leaf disease vision inference, symptom NLP classification,
-Grad-CAM heatmaps, and explanation synthesis with Streamlit resource caching.
+Grad-CAM heatmaps, explanation synthesis, and multi-category plant part handling
+with Streamlit resource caching.
 """
 
 from __future__ import annotations
@@ -18,13 +19,27 @@ from modules.symptom_model import predict_symptoms, symptom_model_status
 from utils.caching import cached_resource
 from utils.config import SAMPLE_IMAGES_DIR
 from utils.gemini import fallback_diagnosis, generate_description, recommendation_for_image
-from utils.image_processing import check_leaf_suitability, load_image_safely
+from utils.image_processing import check_leaf_suitability, load_image_safely, resize_thumbnail
 
 
 @cached_resource
 def get_cached_vision_model() -> Tuple[Any, List[str], Path]:
     """Cache the PyTorch MobileNetV2 model in memory across Streamlit reruns."""
     return crop_doctor.get_model(prefer_fine_tuned=True)
+
+
+def check_vision_model_status() -> Tuple[bool, Optional[str]]:
+    """
+    Check if the vision model is successfully loaded and ready for inference.
+    Returns (is_ready, error_message).
+    """
+    try:
+        model, class_names, weights_path = get_cached_vision_model()
+        if model is not None and weights_path and weights_path.exists():
+            return True, None
+        return False, "Model file not found or corrupted."
+    except Exception as exc:
+        return False, str(exc)
 
 
 @cached_resource
@@ -40,68 +55,486 @@ def get_available_sample_images() -> List[Dict[str, Any]]:
         for p in sorted(SAMPLE_IMAGES_DIR.glob("*.*")):
             if p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
                 label = p.stem.replace("sample_", "").replace("_", " ").title()
-                samples.append({"name": label, "path": p, "filename": p.name})
+                # Determine matching crop
+                stem_lower = p.stem.lower()
+                crop_name = "Tomato"
+                if "pepper" in stem_lower:
+                    crop_name = "Pepper (Bell)"
+                elif "potato" in stem_lower:
+                    crop_name = "Potato"
+                elif "apple" in stem_lower:
+                    crop_name = "Apple"
+                elif "corn" in stem_lower:
+                    crop_name = "Corn (Maize)"
+                elif "grape" in stem_lower:
+                    crop_name = "Grape"
+
+                samples.append({
+                    "name": label,
+                    "path": p,
+                    "filename": p.name,
+                    "crop": crop_name,
+                    "part": "🍃 Leaf / Foliage",
+                })
     return samples
+
+
+EDUCATIONAL_PATHOLOGY_GUIDES: Dict[Tuple[str, str], Dict[str, Any]] = {
+    # Fruit guides
+    ("Fruit", "Tomato"): {
+        "title": "Tomato Fruit Pathology & Physiological Disorders",
+        "common_conditions": [
+            "Blossom End Rot: Dark, sunken leathery patch at the blossom end caused by localized calcium deficiency aggravated by uneven watering.",
+            "Anthracnose (Colletotrichum coccodes): Circular, sunken water-soaked spots with dark concentric rings on ripening fruit.",
+            "Sunscald: White, papery, blistered areas on fruit surfaces exposed to intense direct sunlight following canopy loss.",
+            "Catfacing: Severe scarring, puckering, and deep indents on blossom end caused by cold weather during pollination.",
+            "Fruit Borer (Helicoverpa armigera): Entry holes near calyx with larval frass, inducing secondary bacterial soft rot.",
+        ],
+        "field_actions": [
+            "Maintain uniform soil moisture with drip irrigation to ensure steady calcium uptake.",
+            "Foliar spray of 0.5% calcium nitrate during early fruit setting.",
+            "Apply neem-based formulations or recommended bio-pesticides for early borer management.",
+            "For automated AI vision diagnosis, upload a close-up photo of symptomatic foliage.",
+        ],
+    },
+    ("Fruit", "Apple"): {
+        "title": "Apple Fruit Pathology & Storage Disorders",
+        "common_conditions": [
+            "Apple Scab (Venturia inaequalis): Dark, scabby, olive-black crusty lesions causing fruit cracking and distortion.",
+            "Bitter Rot (Colletotrichum fioriniae): Brown sunken circular lesions producing salmon-pink spore masses in humid weather.",
+            "Black Rot (Diplodia seriata): Firm brown decay turning coal-black, mummifying fruit on the spur.",
+            "Sooty Blotch and Flyspeck: Superficial dark smudges and tiny shiny black dots blemishing cuticle quality.",
+        ],
+        "field_actions": [
+            "Prune canopy for adequate light penetration and fast leaf/fruit drying.",
+            "Apply protective orchard fungicides at pink-bud and petal-fall stages.",
+            "Remove mummified fruits and dead twigs to deplete overwintering inoculum.",
+        ],
+    },
+    ("Fruit", "Orange (Citrus)"): {
+        "title": "Citrus Fruit Pathology & Quality Disorders",
+        "common_conditions": [
+            "Citrus Canker (Xanthomonas axonopodis pv. citri): Corky, crater-like raised lesions with water-soaked margins on fruit rinds.",
+            "Huanglongbing (HLB / Citrus Greening): Small, lopsided, poorly colored fruit with inverted color break (green at stylar end).",
+            "Citrus Black Spot (Phyllosticta citricarpa): Hard circular spots with dark brown margins and gray depressed centers.",
+            "Anthracnose (Colletotrichum gloeosporioides): Tear-staining and reddish-brown peel staining following wet spells.",
+        ],
+        "field_actions": [
+            "Vector control for Asian citrus psyllid (Diaphorina citri) to prevent HLB spread.",
+            "Copper hydroxide / oxychloride sprays following post-bloom fruit enlargement.",
+            "Prune infected branches and avoid overhead sprinkler irrigation.",
+        ],
+    },
+    ("Fruit", "Grape"): {
+        "title": "Grape Cluster Pathology & Bunch Rot Complex",
+        "common_conditions": [
+            "Black Rot of Grapes (Guignardia bidwellii): Berries turn light brown, shrivel rapidly, and transform into hard, shrunken black mummies.",
+            "Botrytis Bunch Rot (Gray Mold): Soft rotting of berries with mouse-gray fuzzy fungal sporulation within tight clusters.",
+            "Powdery Mildew on Clusters: Berries coated in ash-gray powder, failing to size, skin cracking and exposing seeds.",
+            "Anthracnose (Bird's Eye Rot): Sunken circular spots on berries with dark purple-brown rings and grayish centers.",
+        ],
+        "field_actions": [
+            "Leaf-plucking in the fruiting zone to enhance cluster aeration and spray coverage.",
+            "Maintain preventative fungicide protection from pre-bloom through bunch closure.",
+            "Avoid bunch bruising and manage berry moth pests.",
+        ],
+    },
+    ("Fruit", "Mango"): {
+        "title": "Mango Fruit Pathology & Post-Harvest Disorders",
+        "common_conditions": [
+            "Anthracnose (Colletotrichum gloeosporioides): Dark brown to black irregular sunken spots on developing and ripe fruits.",
+            "Powdery Mildew (Oidium mangiferae): White powdery coating on panicles and young pea-sized fruitlets, causing massive drop.",
+            "Mango Bacterial Canker: Dark, star-shaped cracks on fruit skin exuding gummy sap.",
+            "Fruit Fly Damage (Bactrocera dorsalis): Oviposition punctures leading to pulp softening, internal rot, and premature fruit fall.",
+        ],
+        "field_actions": [
+            "Install methyl eugenol pheromone traps (10 traps/ha) for fruit fly suppression.",
+            "Pre-harvest spray with copper oxychloride (0.25%) or azoxystrobin (0.1%).",
+            "Post-harvest hot water treatment (52°C for 10 minutes) for fruit quality preservation.",
+        ],
+    },
+    ("Fruit", "Banana"): {
+        "title": "Banana Bunch & Fruit Peel Pathology",
+        "common_conditions": [
+            "Anthracnose (Colletotrichum musae): Black diamond-shaped specks expanding into large sunken lesions on ripening fingers.",
+            "Cigar End Rot (Verticillium theobromae): Dry, black rot resembling the burning tip of a cigar, progressing from the perianth.",
+            "Finger Drop Disorder: Weak pedicels causing fruit detachment during ripening.",
+            "Banana Freckle: Raised dark sandpaper-like spots on peel caused by Phyllosticta musarum.",
+        ],
+        "field_actions": [
+            "Remove dried floral parts (perianth) manually after bunch emergence.",
+            "Bag bunches with perforated polyethylene sleeves to shield fruits from rain and insect blemishes.",
+            "Apply recommended protective sprays at bunch shoot formation.",
+        ],
+    },
+    # Vegetable guides
+    ("Vegetable", "Potato"): {
+        "title": "Potato Tuber Pathology & Storage Disorders",
+        "common_conditions": [
+            "Late Blight Tuber Rot (Phytophthora infestans): Brownish dry granular rot penetrating beneath the peel, leading to secondary wet rot.",
+            "Common Scab (Streptomyces scabies): Corky, pitted or raised surface lesions on tuber skin, compromising marketable grade.",
+            "Black Scurf (Rhizoctonia solani): Hard, black dirt-like sclerotial masses adhering firmly to tuber skin ('dirt that won't wash off').",
+            "Bacterial Soft Rot (Pectobacterium carotovorum): Water-soaked, foul-smelling liquefaction of tuber flesh in warm, wet soils.",
+        ],
+        "field_actions": [
+            "Ensure certified disease-free seed tubers treated with carbendazim or mancozeb.",
+            "Hilling up ridge height to prevent rain-washed blight zoospores from contacting tubers.",
+            "Allow skin curing (10-14 days after dehaulming) before harvesting in dry weather.",
+        ],
+    },
+    ("Vegetable", "Onion"): {
+        "title": "Onion Bulb Pathology & Storage Disorders",
+        "common_conditions": [
+            "Purple Blotch (Alternaria porri): Deep purple sunken lesions on leaf blades and bulb necks.",
+            "Basal Rot (Fusarium oxysporum f. sp. cepae): Softening of the bulb base and root decay, yellowing foliage.",
+            "Black Mold (Aspergillus niger): Black powdery spore masses along outer bulb scale veins in warm storage.",
+            "Bacterial Soft Rot: Water-soaked collapse of inner fleshy scales with pungent sour odor.",
+        ],
+        "field_actions": [
+            "Crop rotation with non-allium crops for at least 3 years to lower Fusarium inoculum.",
+            "Proper bulb field curing (outer dry neck) before warehouse grading.",
+            "Ensure well-ventilated, moisture-controlled storage racks.",
+        ],
+    },
+    ("Vegetable", "Pepper (Bell)"): {
+        "title": "Bell Pepper Pod & Vegetable Pathology",
+        "common_conditions": [
+            "Blossom End Rot: Water-soaked, flat, light brown lesion at the blossom tip due to calcium imbalance.",
+            "Sunscald: Bleached, parchment-like collapsed fruit wall caused by direct midday thermal radiation.",
+            "Anthracnose Fruit Rot: Circular sunken spots with concentric rings of salmon-pink gelatinous spore masses.",
+            "Bacterial Spot on Pods: Small, raised blisters that become brown, cratered, and rough-surfaced.",
+        ],
+        "field_actions": [
+            "Maintain uniform drip irrigation scheduling to prevent calcium transport lapses.",
+            "Avoid excessive nitrogen fertilization which causes lush canopy but vulnerable fruit.",
+            "Apply copper-based protectants before heavy monsoon rain intervals.",
+        ],
+    },
+    ("Vegetable", "Eggplant (Brinjal)"): {
+        "title": "Eggplant (Brinjal) Vegetable & Fruit Pathology",
+        "common_conditions": [
+            "Phomopsis Blight & Fruit Rot (Phomopsis vexans): Large, pale, sunken spots on fruit with tiny black pycnidia, softening the flesh.",
+            "Bacterial Wilt (Ralstonia solanacearum): Rapid daytime wilting and vascular browning without prior leaf yellowing.",
+            "Shoot and Fruit Borer (Leucinodes orbonalis): Bored holes plugged with frass, causing fruit deformation and unmarketable crop.",
+            "Little Leaf of Brinjal: Severe leaf reduction, bushy appearance, and failure to produce viable floral buds.",
+        ],
+        "field_actions": [
+            "Clip and destroy wilting shoot tips and borer-damaged fruits weekly.",
+            "Use pheromone traps (Lucin-lure, 25 traps/ha) for mass borer capture.",
+            "Drench soil with biocontrol agents (Trichoderma viride + Pseudomonas fluorescens) against soil-borne wilt.",
+        ],
+    },
+    ("Vegetable", "Cucumber"): {
+        "title": "Cucumber Vegetable & Fruit Pathology",
+        "common_conditions": [
+            "Downy Mildew (Pseudoperonospora cubensis): Angular yellow chlorotic patches constrained by leaf veins with purplish sporulation below.",
+            "Powdery Mildew (Podosphaera xanthii): White powdery fungal talcum covering foliage, stunting cucumber fruit enlargement.",
+            "Anthracnose Fruit Rot: Sunken circular lesions with salmon-pink spore droplets on cucumber fruit bodies.",
+            "Cucumber Mosaic Virus (CMV): Stunted, pale, warted, and mottled fruit distortion transmitted by aphid vectors.",
+        ],
+        "field_actions": [
+            "Provide vertical trellis training to lift fruits off moist soil and improve aeration.",
+            "Spray systemic fungicides (metalaxyl or cymoxanil + mancozeb) upon initial downy mildew detection.",
+            "Control aphid vector colonies early using yellow sticky cards and insecticidal soap.",
+        ],
+    },
+    # Field Crop guides
+    ("Field Crop", "Wheat"): {
+        "title": "Wheat Field Crop Pathology & Rust Monitoring",
+        "common_conditions": [
+            "Yellow / Stripe Rust (Puccinia striiformis): Lemon-yellow pustules arranged in characteristic narrow parallel stripes along leaf blades.",
+            "Brown / Leaf Rust (Puccinia triticina): Small, round, scattered orange-brown pustules on upper leaf surfaces.",
+            "Karnal Bunt (Tilletia indica): Partial conversion of grains into black, pungent (trimethylamine) powdery teliospore masses.",
+            "Loose Smut (Ustilago tritici): Entire ear head transformed into a black sooty mass of fungal spores at ear emergence.",
+            "Powdery Mildew: White cottony patches turning dull gray with black cleistothecia on lower canopy.",
+        ],
+        "field_actions": [
+            "Conduct structured field surveillance weekly for yellow rust focal foci.",
+            "Spray propiconazole 25% EC (0.1%) or tebuconazole upon initial stripe rust detection.",
+            "Treat seed with carboxin or tebuconazole to eliminate seed-borne loose smut.",
+        ],
+    },
+    ("Field Crop", "Rice"): {
+        "title": "Rice Paddy Pathology & Panicle Diseases",
+        "common_conditions": [
+            "Rice Blast (Magnaporthe oryzae): Spindle-shaped eye lesions on leaves; brownish-black rotting of the panicle neck (Neck Blast).",
+            "Bacterial Leaf Blight (Xanthomonas oryzae pv. oryzae): Water-soaked streaks starting from leaf margins turning yellowish-white with bacterial ooze.",
+            "Sheath Blight (Rhizoctonia solani): Oval, greenish-gray snake-skin lesions on leaf sheaths near the water line.",
+            "False Smut (Ustilaginoidea virens): Individual rice grains transform into velvety yellow-orange or greenish-black spore balls.",
+        ],
+        "field_actions": [
+            "Split nitrogen doses (basal, tillering, panicle initiation) rather than heavy single applications.",
+            "Apply tricyclazole 75% WP (0.06%) at boot leaf stage to protect against neck blast.",
+            "Drain field temporarily to reduce relative humidity around plant bases when sheath blight appears.",
+        ],
+    },
+    ("Field Crop", "Cotton"): {
+        "title": "Cotton Field Crop & Boll Pathology",
+        "common_conditions": [
+            "Cotton Leaf Curl Virus (CLCuV): Thickened veins, upward leaf curling, and enations (leaf-like outgrowths) on lower leaf surfaces.",
+            "Bacterial Blight / Angular Leaf Spot (Xanthomonas citri pv. malvacearum): Angular water-soaked leaf spots and black arm stem lesions.",
+            "Boll Rot Complex: Rotting of internal lint and seed caused by fungi/bacteria following insect puncture wounds.",
+            "Fusarium / Verticillium Wilt: Interveinal chlorosis ('tiger stripe' pattern) followed by vascular browning in the stem xylem.",
+        ],
+        "field_actions": [
+            "Manage whitefly (Bemisia tabaci) populations vigorously to prevent viral transmission.",
+            "Apply copper oxychloride (0.3%) + streptocycline (100 ppm) for bacterial blight outbreaks.",
+            "Avoid excessive irrigation during boll formation to prevent high humidity in dense canopies.",
+        ],
+    },
+    ("Field Crop", "Corn (Maize)"): {
+        "title": "Maize (Corn) Field Crop & Ear Pathology",
+        "common_conditions": [
+            "Northern Corn Leaf Blight (Exserohilum turcicum): Long, elliptical, grayish-green to tan lesions up to 15 cm long.",
+            "Common Rust (Puccinia sorghi): Golden brown to cinnamon-brown powdery pustules on both upper and lower leaf surfaces.",
+            "Maydis Leaf Blight: Rectangular tan lesions bounded by veins.",
+            "Fusarium Ear Rot / Gibberella: White to pink mold growth on ear kernels starting from the tip down.",
+        ],
+        "field_actions": [
+            "Foliar application of azoxystrobin + tebuconazole or mancozeb at tasseling stage.",
+            "Deep summer plowing to bury infected crop residues.",
+            "Ensure proper ear drying before sheller harvesting to avoid mycotoxin build-up.",
+        ],
+    },
+    ("Field Crop", "Soybean"): {
+        "title": "Soybean Field Crop & Pod Pathology",
+        "common_conditions": [
+            "Soybean Rust (Phakopsora pachyrhizi): Tiny brown to tan lesions with eruptive raised volcanic pustules on undersides of leaves.",
+            "Anthracnose & Pod Blight (Colletotrichum truncatum): Irregular brown spots on stems and pods with black acervuli setae.",
+            "Yellow Mosaic Virus (MYMV): Irregular bright yellow and green mottling of foliage spread by whiteflies.",
+            "Charcoal Rot (Macrophomina phaseolina): Premature senescence with silvery gray discoloration and microsclerotia inside split stems.",
+        ],
+        "field_actions": [
+            "Maintain optimum plant spacing to avoid excessive canopy humidity.",
+            "Seed treatment with thiram + carbendazim (2:1 at 3g/kg seed).",
+            "Apply hexaconazole or propiconazole at first appearance of rust pustules.",
+        ],
+    },
+    # Whole Plant guides
+    ("Whole Plant", "General"): {
+        "title": "Whole Plant, Stem & Root Pathology Guidelines",
+        "common_conditions": [
+            "Vascular Wilt Syndrome (Fusarium / Verticillium): Progressive daytime wilting, vascular cylinder browning when stem is sliced lengthwise.",
+            "Damping-off & Collar Rot (Pythium / Rhizoctonia / Sclerotium): Dark, water-soaked constriction at soil line causing collapse of young stems.",
+            "Stem Blight & Cankers: Depressed dark necrotic lesions girdling main stems or lateral scaffold branches.",
+            "Root Rot Complex: Decayed, black or brown spongy roots stripped of feeder hair roots, resulting in generalized stunting and chlorosis.",
+        ],
+        "field_actions": [
+            "Uproot and dissect one representative symptomatic plant to inspect internal stem vascular color and root health.",
+            "Ensure raised bed drainage to avoid soil waterlogging and hypoxic root asphyxiation.",
+            "Incorporate bio-fungicides (Trichoderma harzianum @ 5 kg/ha in farmyard manure) at soil preparation.",
+            "For automated AI vision diagnosis, upload a clear close-up photograph of an affected leaf blade.",
+        ],
+    },
+}
+
+
+def check_diagnostic_eligibility(
+    plant_part: str = "🍃 Leaf / Foliage",
+    crop: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Determine whether the requested combination of plant part and crop
+    can be genuinely diagnosed by AgriVision's vision CNN (MobileNetV2 38-class PlantVillage).
+
+    The vision CNN is trained exclusively on **crop leaf foliage** across 14 verified plant species.
+    """
+    part_clean = plant_part.strip()
+    is_leaf = "leaf" in part_clean.lower() or "foliage" in part_clean.lower()
+
+    crop_clean = (crop or "").strip()
+    is_auto = not crop_clean or "auto" in crop_clean.lower() or "all" in crop_clean.lower()
+    is_supported_crop = is_auto or crop_clean in crop_doctor.VERIFIED_VISION_CROPS
+
+    can_run = is_leaf and is_supported_crop
+
+    # Standardize category key
+    if "fruit" in part_clean.lower():
+        category_key = "Fruit"
+    elif "vegetable" in part_clean.lower() or "tuber" in part_clean.lower():
+        category_key = "Vegetable"
+    elif "field" in part_clean.lower():
+        category_key = "Field Crop"
+    elif "whole" in part_clean.lower() or "stem" in part_clean.lower():
+        category_key = "Whole Plant"
+    else:
+        category_key = "Leaf"
+
+    guide = (
+        EDUCATIONAL_PATHOLOGY_GUIDES.get((category_key, crop_clean))
+        or EDUCATIONAL_PATHOLOGY_GUIDES.get((category_key, "General"))
+        or EDUCATIONAL_PATHOLOGY_GUIDES.get(("Whole Plant", "General"))
+    )
+
+    notice_title = None
+    notice_text = None
+
+    if not can_run:
+        if not is_leaf:
+            notice_title = f"Model Scope Notice: {category_key} Image Uploaded"
+            notice_text = (
+                f"The AgriVision Vision CNN is trained strictly on **crop leaf foliage** "
+                f"(38-class MobileNetV2 architecture). It has not been validated to diagnose "
+                f"{category_key.lower()} bodies, tubers, or whole plants. "
+                f"To prevent unreliable or hallucinated disease classifications, automated CNN "
+                f"image classification is withheld for this specimen. "
+                f"Please refer to the agronomic guidance below, or upload a clear leaf photo for CNN diagnosis."
+            )
+        else:
+            notice_title = f"Model Scope Notice: Unindexed Crop '{crop_clean}'"
+            notice_text = (
+                f"The existing 38-class vision model does not include '{crop_clean}' in its "
+                f"training corpus. Running inference would forcibly map this leaf onto an unrelated "
+                f"crop's disease class. Genuine diagnosis for '{crop_clean}' requires a model "
+                f"specifically trained on {crop_clean} pathology data. Vision CNN classification is withheld."
+            )
+
+    return {
+        "can_run_cnn": can_run,
+        "is_leaf": is_leaf,
+        "is_supported_crop": is_supported_crop,
+        "category_key": category_key,
+        "crop_clean": crop_clean,
+        "notice_title": notice_title,
+        "notice_text": notice_text,
+        "guide": guide,
+    }
 
 
 def run_crop_diagnosis(
     image: Optional[Image.Image] = None,
     symptom_text: Optional[str] = None,
+    plant_part: str = "🍃 Leaf / Foliage",
+    crop: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Execute full Crop Doctor diagnostic workflow:
-    - Vision model inference on leaf image (if provided)
-    - Symptom classification on farmer description (if provided)
-    - Signal combination via min(confidence) and 0.70 threshold
-    - AI or deterministic explanation synthesis
-    - Actionable recommendations
+    - Verifies diagnostic eligibility for the selected plant part and crop.
+    - If eligible (Leaf + Supported crop), runs cached MobileNetV2 vision inference.
+    - If non-leaf or unsupported crop, withholds CNN inference and produces educational agronomic guidance.
+    - Runs Random Forest symptom classification on farmer text description (if provided).
+    - Fuses available signals and synthesizes actionable recommendations.
     """
+    eligibility = check_diagnostic_eligibility(plant_part=plant_part, crop=crop)
     image_result: Optional[Dict[str, Any]] = None
     leaf_warning: Optional[str] = None
 
     if image is not None:
-        is_suitable, warning = check_leaf_suitability(image)
-        if not is_suitable:
-            leaf_warning = warning
+        if eligibility["can_run_cnn"]:
+            is_suitable, warning = check_leaf_suitability(image)
+            if not is_suitable:
+                leaf_warning = warning
 
-        model, class_names, weights_path = get_cached_vision_model()
-        image_result = crop_doctor.predict_from_image(
-            image=image,
-            model=model,
-            class_names=class_names,
-            weights_path=weights_path,
-            top_k=3,
-        )
+            # Efficiently downsample large image before inference
+            scaled_img = resize_thumbnail(image, max_dim=800)
+            model, class_names, weights_path = get_cached_vision_model()
+            image_result = crop_doctor.predict_from_image(
+                image=scaled_img,
+                model=model,
+                class_names=class_names,
+                weights_path=weights_path,
+                top_k=3,
+            )
+        else:
+            # Model cannot diagnose this category - do not run CNN to prevent false predictions
+            image_result = None
 
     symptom_result: Optional[Dict[str, Any]] = None
     cleaned_symptoms = (symptom_text or "").strip()
     if cleaned_symptoms:
         symptom_result = predict_symptoms(cleaned_symptoms)
 
-    combined = crop_doctor.combine_signals(image_result, symptom_result)
-
-    # Explanation generation
-    if combined.get("is_confident"):
-        explanation = generate_description(image_result, symptom_result, cleaned_symptoms, combined)
-    else:
-        explanation = {
-            "text": fallback_diagnosis(image_result, symptom_result, combined, cleaned_symptoms),
-            "source": "offline-fallback",
-            "used_ai": False,
-            "model": None,
-            "error": None,
-            "prompt": None,
-        }
-
     recommendations: List[str] = []
-    if image_result and not image_result.get("error") and image_result.get("label"):
-        rec = recommendation_for_image(image_result)
-        if rec:
-            recommendations.append(rec)
-    if symptom_result and not symptom_result.get("error") and symptom_result.get("advice"):
-        adv = symptom_result["advice"]
-        if adv and adv not in recommendations:
-            recommendations.append(adv)
+
+    if eligibility["can_run_cnn"]:
+        combined = crop_doctor.combine_signals(image_result, symptom_result)
+        # Explanation generation
+        if combined.get("is_confident"):
+            explanation = generate_description(image_result, symptom_result, cleaned_symptoms, combined)
+        else:
+            explanation = {
+                "text": fallback_diagnosis(image_result, symptom_result, combined, cleaned_symptoms),
+                "source": "offline-fallback",
+                "used_ai": False,
+                "model": None,
+                "error": None,
+                "prompt": None,
+            }
+
+        if image_result and not image_result.get("error") and image_result.get("label"):
+            rec = recommendation_for_image(image_result)
+            if rec:
+                recommendations.append(rec)
+        if symptom_result and not symptom_result.get("error") and symptom_result.get("advice"):
+            adv = symptom_result["advice"]
+            if adv and adv not in recommendations:
+                recommendations.append(adv)
+
+    else:
+        # Ineligible for vision CNN: handle gracefully with symptom NLP and educational guide
+        guide = eligibility.get("guide", {})
+        if symptom_result and not symptom_result.get("error"):
+            conf = float(symptom_result.get("confidence") or 0.0)
+            combined = {
+                "combined_confidence": conf,
+                "is_confident": conf >= 0.70,
+                "threshold": 0.70,
+                "confidence_band": crop_doctor.confidence_band(conf),
+                "message": (
+                    None if conf >= 0.70 else
+                    "Symptom description provided moderate indicators. Inspect live crops in person or consult an agronomist."
+                ),
+                "agreement": True,
+                "disagreement_note": None,
+                "severity": symptom_result.get("severity", "Moderate"),
+                "signals_used": 1,
+                "image_confidence": None,
+                "symptom_confidence": conf,
+            }
+            explanation = {
+                "text": (
+                    f"**Text-Based Symptom Analysis Only:** Automated vision CNN diagnosis was withheld because "
+                    f"the selected upload ({eligibility['category_key']} / {crop or 'General'}) is outside the model's "
+                    f"verified foliar training scope. However, based on your reported field symptoms, the symptom classifier flagged: "
+                    f"**{symptom_result.get('pretty_label')}** with {conf * 100:.1f}% confidence. "
+                    f"{symptom_result.get('advice', '')}"
+                ),
+                "source": "symptom-nlp-only",
+                "used_ai": False,
+                "model": "agrivision_symptom_model.pkl",
+                "error": None,
+                "prompt": None,
+            }
+            if symptom_result.get("advice"):
+                recommendations.append(symptom_result["advice"])
+        else:
+            combined = {
+                "combined_confidence": 0.0,
+                "is_confident": False,
+                "threshold": 0.70,
+                "confidence_band": "Not Evaluated",
+                "message": eligibility.get("notice_text"),
+                "agreement": True,
+                "disagreement_note": None,
+                "severity": "Educational Advisory",
+                "signals_used": 0,
+                "image_confidence": None,
+                "symptom_confidence": None,
+            }
+            explanation = {
+                "text": eligibility.get("notice_text") or "No foliar diagnosis available for this category.",
+                "source": "scope-notice",
+                "used_ai": False,
+                "model": None,
+                "error": None,
+                "prompt": None,
+            }
+
+        # Add educational field actions from guide if available
+        if guide and "field_actions" in guide:
+            for act in guide["field_actions"]:
+                if act not in recommendations:
+                    recommendations.append(act)
 
     return {
         "image_result": image_result,
@@ -110,6 +543,7 @@ def run_crop_diagnosis(
         "explanation": explanation,
         "recommendations": recommendations,
         "leaf_warning": leaf_warning,
+        "eligibility": eligibility,
     }
 
 
@@ -118,11 +552,12 @@ def generate_gradcam_explanation(
     target_label: Optional[str] = None,
     alpha: float = 0.45,
 ) -> Dict[str, Any]:
-    """Generate Grad-CAM activation heatmap overlay for visual explainability."""
+    """Generate Grad-CAM activation heatmap overlay for visual explainability on supported vision model."""
     try:
         from utils.gradcam import gradcam_overlay
         model, class_names, weights_path = get_cached_vision_model()
-        tensor = crop_doctor.preprocess_image(image, device=crop_doctor.get_device())
+        scaled_img = resize_thumbnail(image, max_dim=800)
+        tensor = crop_doctor.preprocess_image(scaled_img, device=crop_doctor.get_device())
         result = gradcam_overlay(
             model=model,
             input_tensor=tensor,

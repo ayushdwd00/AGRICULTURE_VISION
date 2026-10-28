@@ -9,4 +9,3 @@ M2 weather_report          level=HIGH risks=['fungal', 'bacterial'] ai=offline-f
 M3 calculate               112.5 kg cost=675.0
 M4 verify_product          found=True verified=True registry=10
 M5 match_schemes           matches=8 near=0
-M6 rental                  machines=4 login=True booking_ok=True clash_prevented=True

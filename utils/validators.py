@@ -23,11 +23,13 @@ def validate_image_upload(file: Any) -> Tuple[bool, Optional[str]]:
     if size is not None and size > MAX_UPLOAD_SIZE_BYTES:
         return False, f"Image size exceeds {MAX_UPLOAD_SIZE_MB} MiB limit. Please upload a smaller photo."
     
-    # Check mime type or extension
+    # Check mime type and extension
     name = getattr(file, "name", "")
     type_ = getattr(file, "type", "")
     valid_exts = (".jpg", ".jpeg", ".png", ".webp")
-    if not (any(name.lower().endswith(ext) for ext in valid_exts) or type_.startswith("image/")):
+    has_valid_ext = any(name.lower().endswith(ext) for ext in valid_exts)
+    has_valid_type = not type_ or type_.startswith("image/")
+    if not (has_valid_ext and has_valid_type):
         return False, "Unsupported file format. Please upload a JPEG, PNG, or WebP image."
     
     return True, None

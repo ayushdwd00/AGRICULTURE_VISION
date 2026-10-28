@@ -22,6 +22,12 @@ frontend/dist/
 *.keras
 *.onnx
 
+# Allow AgriVision model artifacts for deployment
+!models/agrivision_cnn.pth
+!models/agrivision_symptom_model.pkl
+!models/mobilenetv2_plant.pth
+!models/class_names.json
+
 # --- databases ------------------------------------------------
 *.db
 *.sqlite

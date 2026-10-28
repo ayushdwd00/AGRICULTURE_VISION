@@ -369,9 +369,15 @@ def load_symptom_model(model_path: str = str(SYMPTOM_MODEL_PATH)) -> Dict[str, A
 
         path = Path(resolved)
         if not path.exists():
+            if SYMPTOMS_CSV_PATH.exists():
+                try:
+                    train_symptom_model(csv_path=SYMPTOMS_CSV_PATH, model_path=path, verbose=False)
+                except Exception:
+                    pass
+        if not path.exists():
             raise FileNotFoundError(
                 f"Symptom model not found: {path}. "
-                "Run: python training/build_symptom_dataset.py && python training/train_symptom_model.py"
+                "Run: python training/train_symptom_model.py"
             )
         payload = joblib.load(path)
         if not isinstance(payload, dict) or "pipeline" not in payload:

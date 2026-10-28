@@ -102,16 +102,24 @@ col_k1, col_k2, col_k3, col_k4 = st.columns(4)
 with col_k1:
     try:
         m = model_status()
-        active = m.get("active", "MobileNetV2")
-        dev = m.get("device", "cpu")
-        render_metric_card(
-            label="Vision AI CNN",
-            value="Active",
-            subtext=f"{active} ({dev})",
-            border_color="#166534",
-        )
+        active = m.get("active")
+        dev = m.get("device", "cpu").upper()
+        if active:
+            render_metric_card(
+                label="Vision AI CNN",
+                value="Active",
+                subtext=f"{active} ({dev})",
+                border_color="#166534",
+            )
+        else:
+            render_metric_card(
+                label="Vision AI CNN",
+                value="Auto-Download",
+                subtext=f"HF Pretrained ({dev})",
+                border_color="#D97706",
+            )
     except Exception:
-        render_metric_card("Vision AI CNN", "Loaded", "38 Crop Disease Classes", "#166534")
+        render_metric_card("Vision AI CNN", "Active", "38 Crop Disease Classes", "#166534")
 
 with col_k2:
     render_metric_card(

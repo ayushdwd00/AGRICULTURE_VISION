@@ -53,7 +53,7 @@ def render_sidebar() -> None:
         # Fetch actual application status data
         try:
             m_stat = model_status()
-            active_model = m_stat.get("active", "agrivision_cnn.pth")
+            active_model = m_stat.get("active") or "agrivision_cnn.pth"
             device = m_stat.get("device", "cpu").upper()
         except Exception:
             active_model = "agrivision_cnn.pth"
