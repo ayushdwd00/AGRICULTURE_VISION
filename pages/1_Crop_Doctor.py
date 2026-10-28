@@ -26,11 +26,18 @@ from components.cards import (
 from components.navigation import render_sidebar_status
 from components.three_scene import render_3d_plant_scene
 from components.visualizations import plot_top_predictions
-from modules.crop_doctor import (
-    EXTENDED_AGRICULTURAL_CROPS,
-    PLANT_PART_OPTIONS,
-    VERIFIED_VISION_CROPS,
-)
+try:
+    from modules.crop_doctor import (
+        EXTENDED_AGRICULTURAL_CROPS,
+        PLANT_PART_OPTIONS,
+        VERIFIED_VISION_CROPS,
+    )
+except (ImportError, AttributeError):
+    from services.crop_diagnosis import (
+        EXTENDED_AGRICULTURAL_CROPS,
+        PLANT_PART_OPTIONS,
+        VERIFIED_VISION_CROPS,
+    )
 from services.crop_diagnosis import (
     check_diagnostic_eligibility,
     check_vision_model_status,

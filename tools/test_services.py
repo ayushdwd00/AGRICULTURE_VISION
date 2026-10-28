@@ -35,8 +35,9 @@ if samples:
 print("\n--- 3. Testing Weather Intelligence (Open-Meteo) ---")
 w = get_cached_weather("Pune", use_ai=False)
 print("Resolved City:", w.get("city"))
-print("Current Temperature:", w.get("weather", {}).get("temperature"), "°C")
-print("Relative Humidity:", w.get("weather", {}).get("humidity"), "%")
+weather_data = w.get("weather") or {}
+print("Current Temperature:", weather_data.get("temperature", "Offline"), "°C")
+print("Relative Humidity:", weather_data.get("humidity", "Offline"), "%")
 print("Risk Level:", w.get("risk_level"))
 
 print("\n--- 4. Testing Fertilizer Planner (Deterministic) ---")

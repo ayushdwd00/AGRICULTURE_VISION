@@ -15,11 +15,30 @@ from PIL import Image
 import streamlit as st
 
 from modules import crop_doctor
+from modules.crop_doctor import (
+    EXTENDED_AGRICULTURAL_CROPS,
+    PLANT_PART_OPTIONS,
+    VERIFIED_VISION_CROPS,
+)
 from modules.symptom_model import predict_symptoms, symptom_model_status
 from utils.caching import cached_resource
 from utils.config import SAMPLE_IMAGES_DIR
 from utils.gemini import fallback_diagnosis, generate_description, recommendation_for_image
 from utils.image_processing import check_leaf_suitability, load_image_safely, resize_thumbnail
+
+__all__ = [
+    "EXTENDED_AGRICULTURAL_CROPS",
+    "PLANT_PART_OPTIONS",
+    "VERIFIED_VISION_CROPS",
+    "EDUCATIONAL_PATHOLOGY_GUIDES",
+    "get_cached_vision_model",
+    "check_vision_model_status",
+    "get_cached_symptom_status",
+    "get_available_sample_images",
+    "check_diagnostic_eligibility",
+    "run_crop_diagnosis",
+    "generate_gradcam_explanation",
+]
 
 
 @cached_resource
@@ -427,14 +446,19 @@ def run_crop_diagnosis(
 
             # Efficiently downsample large image before inference
             scaled_img = resize_thumbnail(image, max_dim=800)
-            model, class_names, weights_path = get_cached_vision_model()
-            image_result = crop_doctor.predict_from_image(
-                image=scaled_img,
-                model=model,
-                class_names=class_names,
-                weights_path=weights_path,
-                top_k=3,
-            )
+            try:
+                model, class_names, weights_path = get_cached_vision_model()
+                image_result = crop_doctor.predict_from_image(
+                    image=scaled_img,
+                    model=model,
+                    class_names=class_names,
+                    weights_path=weights_path,
+                    top_k=3,
+                )
+            except Exception as exc:
+                image_result = crop_doctor._empty_result(
+                    f"Vision model unavailable: {exc}. Please verify model weights or provide field symptoms."
+                )
         else:
             # Model cannot diagnose this category - do not run CNN to prevent false predictions
             image_result = None

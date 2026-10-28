@@ -119,7 +119,7 @@ with col_k1:
                 border_color="#D97706",
             )
     except Exception:
-        render_metric_card("Vision AI CNN", "Active", "38 Crop Disease Classes", "#166534")
+        render_metric_card("Vision AI CNN", "Unavailable", "Model Status Offline", "#DC2626")
 
 with col_k2:
     render_metric_card(

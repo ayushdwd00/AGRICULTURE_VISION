@@ -96,6 +96,37 @@ PLANT_PART_OPTIONS: List[str] = [
     "🪴 Whole Plant / Stem",
 ]
 
+__all__ = [
+    "NUM_CLASSES",
+    "WEIGHTS_LABELS",
+    "VERIFIED_VISION_CROPS",
+    "EXTENDED_AGRICULTURAL_CROPS",
+    "PLANT_PART_OPTIONS",
+    "get_device",
+    "build_model",
+    "extract_state_dict",
+    "load_checkpoint_into_model",
+    "available_weights",
+    "is_model_loaded",
+    "model_status",
+    "preprocess_transform",
+    "augment_transform",
+    "ensure_model_weights",
+    "preprocess_image",
+    "clear_crop_doctor_cache",
+    "load_model",
+    "get_model",
+    "current_model_label",
+    "build_image_folder_dataset",
+    "predict_from_image",
+    "predict_image",
+    "predict_probabilities",
+    "gradcam_for_image",
+    "signals_agree",
+    "combine_signals",
+    "confidence_band",
+]
+
 # Model construction / loading
 
 import threading

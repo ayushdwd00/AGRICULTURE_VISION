@@ -53,11 +53,16 @@ def render_sidebar() -> None:
         # Fetch actual application status data
         try:
             m_stat = model_status()
-            active_model = m_stat.get("active") or "agrivision_cnn.pth"
+            active_model = m_stat.get("active")
             device = m_stat.get("device", "cpu").upper()
         except Exception:
-            active_model = "agrivision_cnn.pth"
+            active_model = None
             device = "CPU"
+
+        if active_model:
+            vision_status_html = f'<code>{active_model}</code> <span class="agv-status-tag">({device})</span>'
+        else:
+            vision_status_html = '<span style="color:#DC2626;font-size:0.82rem;font-weight:600;">Unavailable</span>'
 
         try:
             p_stat = verifier_status()
@@ -86,7 +91,7 @@ def render_sidebar() -> None:
                             <span>Vision CNN</span>
                         </div>
                         <div class="agv-status-row-value">
-                            <code>{active_model}</code> <span class="agv-status-tag">({device})</span>
+                            {vision_status_html}
                         </div>
                     </div>
                     <div class="agv-status-row">
