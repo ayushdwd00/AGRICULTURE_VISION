@@ -289,24 +289,4 @@ with col_t2:
         st.switch_page("pages/5_Government_Schemes.py")
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
-
-# Architecture Summary
-with st.expander("🏗️ Technical Architecture & Migration Summary"):
-    st.markdown(
-        """
-        ### Streamlit Unified Architecture (Migrated from React + FastAPI)
-        AgriVision has been rebuilt as an integrated, Python-first Streamlit application:
-        - **UI & Presentation:** Streamlit multipage navigation, scoped editorial CSS, Playfair Display typography, responsive Plotly charts.
-        - **Deep Learning Model:** PyTorch MobileNetV2 (`agrivision_cnn.pth` and `mobilenetv2_plant.pth`) loaded once via `@st.cache_resource`.
-        - **Symptom Classifier:** Scikit-Learn Random Forest pipeline (`agrivision_symptom_model.pkl`) trained on `data/symptoms.csv`.
-        - **Visual Explainability:** PyTorch activation hooks Grad-CAM generation with custom alpha blending overlays.
-        - **3D Interactive Scene:** Preserved Three.js crop rows and plant model rendered in-browser with OrbitControls.
-        - **Microclimate Engine:** Open-Meteo REST API integration with 15-minute response caching per location (`@st.cache_data(ttl=900)`).
-        - **Nutrient Arithmetic:** Deterministic lookup engine reading `data/fertilizer_data.json` without AI fabrication.
-        - **Product Registry:** Local SQLite database (`data/products.db`) with OpenCV QR code detection.
-        - **Deployment Ready:** Single runtime, streamlined `requirements.txt`, no Node.js/Vite or dual-server configuration required.
-        """
-    )
-
 render_footer()

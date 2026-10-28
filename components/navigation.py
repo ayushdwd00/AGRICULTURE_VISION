@@ -45,6 +45,7 @@ def render_sidebar() -> None:
         st.page_link("pages/3_Fertilizer_Planner.py", label="Fertilizer Planner", icon="🧮")
         st.page_link("pages/4_Product_Verification.py", label="Product Verification", icon="🔐")
         st.page_link("pages/5_Government_Schemes.py", label="Government Schemes", icon="🏛️")
+        st.page_link("pages/6_About_AgriVision.py", label="About AgriVision", icon="📖")
 
         st.markdown('<div class="agv-sidebar-divider"></div>', unsafe_allow_html=True)
 
