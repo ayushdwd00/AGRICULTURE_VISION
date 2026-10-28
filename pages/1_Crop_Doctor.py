@@ -45,6 +45,7 @@ from services.crop_diagnosis import (
     run_crop_diagnosis,
 )
 from utils.config import CONFIDENCE_THRESHOLD
+from utils.gemini import is_configured as is_visual_review_configured
 from utils.image_processing import load_image_safely, resize_thumbnail
 from utils.validators import validate_image_upload
 
@@ -60,13 +61,14 @@ render_sidebar_status()
 render_page_header(
     eyebrow="Agricultural Diagnostic Intelligence · Multi-Category Support",
     title="Crop Doctor",
-    description="Diagnose crop conditions across leaves, fruits, vegetables, field crops, and whole plants. Automated CNN vision inference is powered by verified MobileNetV2 models for foliar pathology, backed by symptom NLP classification, Grad-CAM explainability, and educational agronomic guides.",
+    description="Upload a plant photo for a leaf diagnosis where supported, or a cautious preliminary assessment for other plant parts.",
     icon="🩺",
 )
 
 # Build crop selection list
 SUPPORTED_CROP_LIST = ["Auto-detect from supported crops"] + list(VERIFIED_VISION_CROPS.keys())
 CROP_OPTIONS = SUPPORTED_CROP_LIST + ["────────── Extended Crops ──────────"] + EXTENDED_AGRICULTURAL_CROPS
+PLANT_PART_CHOICES = ["Select plant part"] + PLANT_PART_OPTIONS
 
 # Session state initialization for Crop Doctor
 if "crop_image" not in st.session_state:
@@ -74,7 +76,7 @@ if "crop_image" not in st.session_state:
 if "crop_filename" not in st.session_state:
     st.session_state.crop_filename = None
 if "plant_part" not in st.session_state:
-    st.session_state.plant_part = PLANT_PART_OPTIONS[0]
+    st.session_state.plant_part = PLANT_PART_CHOICES[0]
 if "selected_crop" not in st.session_state:
     st.session_state.selected_crop = SUPPORTED_CROP_LIST[0]
 if "diagnosis_result" not in st.session_state:
@@ -100,13 +102,13 @@ with col_upload:
     col_part, col_crop = st.columns(2)
     with col_part:
         part_idx = 0
-        if st.session_state.plant_part in PLANT_PART_OPTIONS:
-            part_idx = PLANT_PART_OPTIONS.index(st.session_state.plant_part)
+        if st.session_state.plant_part in PLANT_PART_CHOICES:
+            part_idx = PLANT_PART_CHOICES.index(st.session_state.plant_part)
         selected_part = st.selectbox(
             "Plant Part / Organ",
-            options=PLANT_PART_OPTIONS,
+            options=PLANT_PART_CHOICES,
             index=part_idx,
-            help="Select whether you are inspecting leaves, fruit bodies, tubers, whole plants, or field crops.",
+            help="Choose the main plant part shown. Only selected supported leaves use the leaf diagnosis model.",
         )
         if selected_part != st.session_state.plant_part:
             st.session_state.plant_part = selected_part
@@ -136,18 +138,38 @@ with col_upload:
         plant_part=st.session_state.plant_part,
         crop=st.session_state.selected_crop,
     )
+    visual_review_available = (
+        not eligibility_check["can_run_cnn"]
+        and st.session_state.plant_part != PLANT_PART_CHOICES[0]
+        and is_visual_review_configured()
+    )
 
     # Check vision model readiness
-    model_ready, model_err = check_vision_model_status()
-    part_name_short = st.session_state.plant_part.split(" ", 1)[-1].split("/")[0].strip()
+    model_ready, model_err = (
+        check_vision_model_status()
+        if eligibility_check["can_run_cnn"]
+        else (False, None)
+    )
+    part_name_short = (
+        "Plant"
+        if st.session_state.plant_part == PLANT_PART_CHOICES[0]
+        else st.session_state.plant_part.split(" ", 1)[-1].split("/")[0].strip()
+    )
 
     # Compact Vision Model Status Indicator
-    if model_ready:
+    if not eligibility_check["can_run_cnn"]:
+        if st.session_state.plant_part == PLANT_PART_CHOICES[0]:
+            st.caption("Select the plant part shown in your photo to continue.")
+        elif visual_review_available:
+            st.caption("Optional photo observations are available with your consent.")
+        else:
+            st.caption("Describe visible changes for a preliminary assessment.")
+    elif model_ready:
         st.markdown(
             """
             <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(226,247,228,0.75);border:1px solid rgba(45,90,39,0.22);border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:600;color:#1B3D26;margin-bottom:12px;">
                 <span style="color:#2D5A27;font-size:0.9rem;font-weight:700;">✓</span>
-                <span>Vision Model Ready</span>
+                <span>Leaf photo diagnosis available</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -157,32 +179,20 @@ with col_upload:
             """
             <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(254,226,226,0.75);border:1px solid rgba(153,27,27,0.22);border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:600;color:#991B1B;margin-bottom:12px;">
                 <span style="font-size:0.85rem;">⚠️</span>
-                <span>Vision Model Unavailable</span>
+                <span>Leaf diagnosis temporarily unavailable</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
         if model_err:
-            with st.expander("Technical Model Details", expanded=False):
-                st.caption(f"Error loading model weights: {model_err}")
-
-    if not eligibility_check["can_run_cnn"]:
-        st.markdown(
-            f"""
-            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(254,243,199,0.65);border:1px solid rgba(217,119,6,0.22);border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:500;color:#92400E;margin-bottom:12px;margin-left:6px;">
-                <span>ℹ️</span>
-                <span>Advisory Guidance ({part_name_short})</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            st.caption("Please try again later or describe the symptoms below.")
 
     # 2. Upload Photo Card
     st.markdown(
         f"""
         <div style="background:#FFFFFF;border:1px solid rgba(27,61,38,0.12);border-radius:14px;padding:1.4rem;box-shadow:0 4px 16px rgba(0,0,0,0.03);">
-            <div style="font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:1.25rem;color:#1B3D26;margin-bottom:4px;">2. Upload {part_name_short} Photo</div>
-            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Upload a clear photograph of the affected {part_name_short.lower()} (JPEG, PNG, WebP · max 8 MiB).</div>
+            <div style="font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:1.25rem;color:#1B3D26;margin-bottom:4px;">2. Upload a Plant Photo</div>
+            <div style="font-size:0.85rem;color:#5E6057;margin-bottom:12px;">Leaves, fruit, vegetables, stems, or whole plants (JPEG, PNG, WebP · max 8 MiB).</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -223,9 +233,7 @@ with col_upload:
     )
 
     symptom_placeholder = (
-        "e.g., Lower leaves are developing dark brown circular spots with yellow halos, and younger foliage is curling upward."
-        if eligibility_check["can_run_cnn"] else
-        f"e.g., Fruits show dark sunken patches at the blossom end, or tubers exhibit brown dry rotting beneath the skin."
+        "Describe what is visible: colour, shape and location of marks; whether they are sunken, soft or spreading; and any changes to leaves."
     )
 
     symptom_text = st.text_area(
@@ -234,15 +242,40 @@ with col_upload:
         height=100,
         label_visibility="collapsed",
     )
+    use_ai_visual_review = False
+    if (
+        st.session_state.crop_image is not None
+        and st.session_state.plant_part != PLANT_PART_CHOICES[0]
+        and not eligibility_check["can_run_cnn"]
+    ):
+        if visual_review_available:
+            use_ai_visual_review = st.checkbox(
+                "Optional AI photo review (the image will be sent to Google for analysis)",
+                value=False,
+                help="Only directly visible features are requested. The result is preliminary and is not a disease diagnosis.",
+            )
+        else:
+            st.caption(
+                "Automatic visual review is unavailable for this plant part. "
+                "Describe visible changes above for a more useful assessment."
+            )
 
     col_btn1, col_btn2 = st.columns([1.5, 1])
     with col_btn1:
-        run_btn = st.button("🩺 Run Diagnostic Analysis", type="primary", use_container_width=True)
+        run_btn = st.button(
+            "🩺 Assess Plant Photo",
+            type="primary",
+            use_container_width=True,
+            disabled=(
+                st.session_state.crop_image is not None
+                and st.session_state.plant_part == PLANT_PART_CHOICES[0]
+            ),
+        )
     with col_btn2:
         if st.button("↺ Reset All", use_container_width=True):
             st.session_state.crop_image = None
             st.session_state.crop_filename = None
-            st.session_state.plant_part = PLANT_PART_OPTIONS[0]
+            st.session_state.plant_part = PLANT_PART_CHOICES[0]
             st.session_state.selected_crop = SUPPORTED_CROP_LIST[0]
             st.session_state.diagnosis_result = None
             st.session_state.gradcam_result = None
@@ -299,13 +332,14 @@ if run_btn:
     if st.session_state.crop_image is None and not symptom_text.strip():
         render_alert_box("Please upload an image or provide symptom descriptions to run diagnostic analysis.", tone="warn")
     else:
-        with st.spinner("Analyzing agricultural specimen and evaluating symptoms..."):
+        with st.spinner("Preparing your plant assessment..."):
             try:
                 res = run_crop_diagnosis(
                     image=st.session_state.crop_image,
                     symptom_text=symptom_text,
                     plant_part=st.session_state.plant_part,
                     crop=st.session_state.selected_crop,
+                    use_ai_visual_review=use_ai_visual_review,
                 )
                 st.session_state.diagnosis_result = res
                 st.session_state.gradcam_result = None
@@ -314,7 +348,125 @@ if run_btn:
 
 # Display Diagnostic Results
 diag = st.session_state.diagnosis_result
-if diag is not None:
+if diag is not None and diag.get("assessment_report"):
+    report = diag["assessment_report"]
+    img_res = diag.get("image_result")
+    symp_res = diag.get("symptom_result")
+
+    render_section_title("Crop Doctor Report", icon="🌿")
+    summary_col, image_col = st.columns([1.1, 0.9], gap="medium")
+    if img_res and img_res.get("error"):
+        render_alert_box(
+            "Leaf diagnosis could not be completed. Try another clear leaf photo or describe the symptoms.",
+            tone="warn",
+        )
+    with summary_col:
+        st.subheader("What We Observed")
+        st.write(
+            f"**Crop:** {report.get('crop') or 'Not identified'} "
+            f"({report.get('crop_basis') or 'Not identified'})"
+        )
+        st.write(f"**Plant part:** {report.get('plant_part') or 'Not identified'}")
+        st.write(f"**Assessment type:** {report.get('assessment_type')}")
+        if report.get("confidence") is not None:
+            st.write(f"**Model confidence:** {report['confidence'] * 100:.1f}%")
+        if report.get("visible_symptoms"):
+            st.write(report["visible_symptoms"])
+        if report.get("reported_symptoms"):
+            st.write(f"**You described:** {report['reported_symptoms']}")
+        if report.get("observed_plant_parts"):
+            st.write(
+                "**Visible plant parts:** "
+                + ", ".join(report["observed_plant_parts"])
+            )
+        if report.get("visual_review_error"):
+            render_alert_box(
+                (
+                    "Photo review was unavailable. Your written description is shown below."
+                    if report.get("reported_symptoms")
+                    else "Photo review was unavailable. No visual observations were generated; try again or describe what you see."
+                ),
+                tone="warn",
+            )
+        if img_res and not img_res.get("error") and img_res.get("pretty_label"):
+            st.write(
+                f"**Leaf model result:** {img_res['pretty_label']} "
+                "(model prediction, not confirmation)"
+            )
+
+        st.subheader("Possible Causes")
+        if report.get("possible_causes"):
+            for cause in report["possible_causes"]:
+                st.write(f"- {cause}")
+        else:
+            st.write(report.get("cause_note") or "There is not enough evidence to suggest a cause.")
+
+        st.subheader("Recommended Next Steps")
+        for action in report.get("next_steps", []):
+            st.write(f"- {action}")
+
+        st.subheader("When to Get Further Help")
+        st.write(report.get("further_help"))
+        if report.get("preliminary_note"):
+            st.caption(report["preliminary_note"])
+
+    with image_col:
+        if st.session_state.crop_image is not None:
+            st.image(
+                resize_thumbnail(st.session_state.crop_image, max_dim=700),
+                caption=st.session_state.crop_filename or "Uploaded plant photo",
+                use_container_width=True,
+            )
+
+    if symp_res and not symp_res.get("error"):
+        with st.expander("Separate symptom-description model result"):
+            st.write(
+                f"{symp_res.get('pretty_label')} — "
+                f"{symp_res.get('confidence', 0.0) * 100:.1f}% model score"
+            )
+            st.caption(
+                "Text-only model suggestion—not a photo diagnosis or confirmed cause. "
+                "The score is the classifier's output, not calibrated disease certainty."
+            )
+    elif symp_res and symp_res.get("error"):
+        st.caption("Symptom-text analysis was unavailable; any photo observations are shown separately.")
+
+    if (
+        st.session_state.crop_image is not None
+        and img_res
+        and not img_res.get("error")
+        and diag.get("eligibility", {}).get("can_run_cnn")
+    ):
+        with st.expander("View leaf model visual explanation"):
+            cam_alpha = st.slider(
+                "Heatmap intensity",
+                min_value=0.1,
+                max_value=0.9,
+                value=0.45,
+                step=0.05,
+            )
+            if st.button("Generate visual explanation"):
+                with st.spinner("Creating visual explanation..."):
+                    st.session_state.gradcam_result = generate_gradcam_explanation(
+                        image=st.session_state.crop_image,
+                        target_label=img_res.get("label"),
+                        alpha=cam_alpha,
+                    )
+            gc = st.session_state.gradcam_result
+            if gc and gc.get("error"):
+                render_alert_box(gc["error"], tone="warn")
+            elif gc:
+                cam_cols = st.columns(3)
+                for col, key, caption in zip(
+                    cam_cols,
+                    ("original_image", "heatmap_image", "overlay_image"),
+                    ("Original photo", "Heatmap", "Model overlay"),
+                ):
+                    with col:
+                        st.image(gc[key], caption=caption, use_container_width=True)
+
+# Legacy results are rendered only for pre-report session state.
+if diag is not None and not diag.get("assessment_report"):
     render_section_title("Diagnostic Assessment & Findings", icon="🔬")
 
     img_res = diag.get("image_result")

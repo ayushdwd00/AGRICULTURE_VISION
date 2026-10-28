@@ -23,7 +23,13 @@ from modules.crop_doctor import (
 from modules.symptom_model import predict_symptoms, symptom_model_status
 from utils.caching import cached_resource
 from utils.config import SAMPLE_IMAGES_DIR
-from utils.gemini import fallback_diagnosis, generate_description, recommendation_for_image
+from utils.gemini import (
+    GeminiError,
+    fallback_diagnosis,
+    generate_description,
+    generate_visual_observations,
+    recommendation_for_image,
+)
 from utils.image_processing import check_leaf_suitability, load_image_safely, resize_thumbnail
 
 __all__ = [
@@ -353,10 +359,8 @@ def check_diagnostic_eligibility(
     crop: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Determine whether the requested combination of plant part and crop
-    can be genuinely diagnosed by AgriVision's vision CNN (MobileNetV2 38-class PlantVillage).
-
-    The vision CNN is trained exclusively on **crop leaf foliage** across 14 verified plant species.
+    Determine whether the selected plant part and crop are within the leaf CNN's
+    validated PlantVillage scope.
     """
     part_clean = plant_part.strip()
     is_leaf = "leaf" in part_clean.lower() or "foliage" in part_clean.lower()
@@ -376,37 +380,10 @@ def check_diagnostic_eligibility(
         category_key = "Field Crop"
     elif "whole" in part_clean.lower() or "stem" in part_clean.lower():
         category_key = "Whole Plant"
-    else:
+    elif "leaf" in part_clean.lower() or "foliage" in part_clean.lower():
         category_key = "Leaf"
-
-    guide = (
-        EDUCATIONAL_PATHOLOGY_GUIDES.get((category_key, crop_clean))
-        or EDUCATIONAL_PATHOLOGY_GUIDES.get((category_key, "General"))
-        or EDUCATIONAL_PATHOLOGY_GUIDES.get(("Whole Plant", "General"))
-    )
-
-    notice_title = None
-    notice_text = None
-
-    if not can_run:
-        if not is_leaf:
-            notice_title = f"Model Scope Notice: {category_key} Image Uploaded"
-            notice_text = (
-                f"The AgriVision Vision CNN is trained strictly on **crop leaf foliage** "
-                f"(38-class MobileNetV2 architecture). It has not been validated to diagnose "
-                f"{category_key.lower()} bodies, tubers, or whole plants. "
-                f"To prevent unreliable or hallucinated disease classifications, automated CNN "
-                f"image classification is withheld for this specimen. "
-                f"Please refer to the agronomic guidance below, or upload a clear leaf photo for CNN diagnosis."
-            )
-        else:
-            notice_title = f"Model Scope Notice: Unindexed Crop '{crop_clean}'"
-            notice_text = (
-                f"The existing 38-class vision model does not include '{crop_clean}' in its "
-                f"training corpus. Running inference would forcibly map this leaf onto an unrelated "
-                f"crop's disease class. Genuine diagnosis for '{crop_clean}' requires a model "
-                f"specifically trained on {crop_clean} pathology data. Vision CNN classification is withheld."
-            )
+    else:
+        category_key = "Other"
 
     return {
         "can_run_cnn": can_run,
@@ -414,9 +391,7 @@ def check_diagnostic_eligibility(
         "is_supported_crop": is_supported_crop,
         "category_key": category_key,
         "crop_clean": crop_clean,
-        "notice_title": notice_title,
-        "notice_text": notice_text,
-        "guide": guide,
+        "guide": None,
     }
 
 
@@ -425,18 +400,17 @@ def run_crop_diagnosis(
     symptom_text: Optional[str] = None,
     plant_part: str = "🍃 Leaf / Foliage",
     crop: Optional[str] = None,
+    use_ai_visual_review: bool = False,
 ) -> Dict[str, Any]:
     """
-    Execute full Crop Doctor diagnostic workflow:
-    - Verifies diagnostic eligibility for the selected plant part and crop.
-    - If eligible (Leaf + Supported crop), runs cached MobileNetV2 vision inference.
-    - If non-leaf or unsupported crop, withholds CNN inference and produces educational agronomic guidance.
-    - Runs Random Forest symptom classification on farmer text description (if provided).
-    - Fuses available signals and synthesizes actionable recommendations.
+    Run the validated leaf CNN only for supported crop leaves. For other image
+    categories, return a preliminary report without making a CNN prediction.
     """
     eligibility = check_diagnostic_eligibility(plant_part=plant_part, crop=crop)
     image_result: Optional[Dict[str, Any]] = None
     leaf_warning: Optional[str] = None
+    visual_review: Optional[Dict[str, Any]] = None
+    visual_review_error: Optional[str] = None
 
     if image is not None:
         if eligibility["can_run_cnn"]:
@@ -462,6 +436,14 @@ def run_crop_diagnosis(
         else:
             # Model cannot diagnose this category - do not run CNN to prevent false predictions
             image_result = None
+            if use_ai_visual_review:
+                try:
+                    visual_review = generate_visual_observations(
+                        resize_thumbnail(image, max_dim=900),
+                        crop=crop if crop and "auto-detect" not in crop.lower() else None,
+                    )
+                except GeminiError as exc:
+                    visual_review_error = str(exc)
 
     symptom_result: Optional[Dict[str, Any]] = None
     cleaned_symptoms = (symptom_text or "").strip()
@@ -469,6 +451,9 @@ def run_crop_diagnosis(
         symptom_result = predict_symptoms(cleaned_symptoms)
 
     recommendations: List[str] = []
+    image_prediction = bool(
+        image_result and not image_result.get("error") and image_result.get("label")
+    )
 
     if eligibility["can_run_cnn"]:
         combined = crop_doctor.combine_signals(image_result, symptom_result)
@@ -485,7 +470,7 @@ def run_crop_diagnosis(
                 "prompt": None,
             }
 
-        if image_result and not image_result.get("error") and image_result.get("label"):
+        if image_prediction:
             rec = recommendation_for_image(image_result)
             if rec:
                 recommendations.append(rec)
@@ -495,70 +480,144 @@ def run_crop_diagnosis(
                 recommendations.append(adv)
 
     else:
-        # Ineligible for vision CNN: handle gracefully with symptom NLP and educational guide
-        guide = eligibility.get("guide", {})
-        if symptom_result and not symptom_result.get("error"):
-            conf = float(symptom_result.get("confidence") or 0.0)
-            combined = {
-                "combined_confidence": conf,
-                "is_confident": conf >= 0.70,
-                "threshold": 0.70,
-                "confidence_band": crop_doctor.confidence_band(conf),
-                "message": (
-                    None if conf >= 0.70 else
-                    "Symptom description provided moderate indicators. Inspect live crops in person or consult an agronomist."
-                ),
-                "agreement": True,
-                "disagreement_note": None,
-                "severity": symptom_result.get("severity", "Moderate"),
-                "signals_used": 1,
-                "image_confidence": None,
-                "symptom_confidence": conf,
-            }
-            explanation = {
-                "text": (
-                    f"**Text-Based Symptom Analysis Only:** Automated vision CNN diagnosis was withheld because "
-                    f"the selected upload ({eligibility['category_key']} / {crop or 'General'}) is outside the model's "
-                    f"verified foliar training scope. However, based on your reported field symptoms, the symptom classifier flagged: "
-                    f"**{symptom_result.get('pretty_label')}** with {conf * 100:.1f}% confidence. "
-                    f"{symptom_result.get('advice', '')}"
-                ),
-                "source": "symptom-nlp-only",
-                "used_ai": False,
-                "model": "agrivision_symptom_model.pkl",
-                "error": None,
-                "prompt": None,
-            }
-            if symptom_result.get("advice"):
-                recommendations.append(symptom_result["advice"])
-        else:
-            combined = {
-                "combined_confidence": 0.0,
-                "is_confident": False,
-                "threshold": 0.70,
-                "confidence_band": "Not Evaluated",
-                "message": eligibility.get("notice_text"),
-                "agreement": True,
-                "disagreement_note": None,
-                "severity": "Educational Advisory",
-                "signals_used": 0,
-                "image_confidence": None,
-                "symptom_confidence": None,
-            }
-            explanation = {
-                "text": eligibility.get("notice_text") or "No foliar diagnosis available for this category.",
-                "source": "scope-notice",
-                "used_ai": False,
-                "model": None,
-                "error": None,
-                "prompt": None,
-            }
+        combined = {
+            "combined_confidence": None,
+            "is_confident": False,
+            "threshold": None,
+            "confidence_band": "Not evaluated",
+            "message": None,
+            "agreement": None,
+            "disagreement_note": None,
+            "severity": None,
+            "signals_used": 0,
+            "image_confidence": None,
+            "symptom_confidence": None,
+        }
+        explanation = {
+            "text": "This image category is not covered by the image diagnosis model.",
+            "source": "preliminary-assessment",
+            "used_ai": False,
+            "model": None,
+            "error": None,
+            "prompt": None,
+        }
 
-        # Add educational field actions from guide if available
-        if guide and "field_actions" in guide:
-            for act in guide["field_actions"]:
-                if act not in recommendations:
-                    recommendations.append(act)
+    selected_crop = (
+        crop.strip()
+        if crop and "auto-detect" not in crop.lower() and "general crop" not in crop.lower()
+        else None
+    )
+    crop_name = (
+        selected_crop
+        or (image_result.get("crop") if image_prediction else None)
+        or (visual_review.get("crop") if visual_review else None)
+    )
+    symptom_description = cleaned_symptoms or None
+    if image_prediction:
+        assessment_type = "CNN diagnosis"
+        visible_symptoms = None
+        confidence = float(image_result["confidence"])
+    elif image is not None:
+        assessment_type = (
+            "Preliminary visual assessment (AI-assisted)"
+            if visual_review
+            else (
+                "Preliminary assessment (based on your description)"
+                if symptom_description
+                else "Image uploaded; visual symptoms not assessed automatically"
+            )
+        )
+        observations = visual_review.get("observations", []) if visual_review else []
+        if observations:
+            visible_symptoms = "; ".join(observations)
+        elif visual_review:
+            visible_symptoms = "No clear visible symptoms were identified in the photo."
+        elif symptom_description:
+            visible_symptoms = None
+        else:
+            visible_symptoms = (
+                "Visible symptoms are not automatically identified for this image category. "
+                "Add a short description of what you can see for a more useful assessment."
+            )
+        confidence = None
+    else:
+        assessment_type = "Symptom description only"
+        visible_symptoms = (
+            None if symptom_description else "No image or symptom description was provided."
+        )
+        confidence = None
+
+    possible_causes = (
+        [f"CNN model prediction: {image_result.get('pretty_label') or image_result['label']}"]
+        if image_prediction
+        else []
+    )
+    cause_note = (
+        "This is a model prediction, not a confirmed diagnosis."
+        if image_prediction
+        else (
+            "The cause cannot be determined from this image alone. Similar marks can have "
+            "different causes, and the affected fruit and foliage may need to be assessed separately."
+            if image is not None
+            else "There is not enough information to suggest a cause."
+        )
+    )
+    next_steps = []
+    if image_prediction and confidence >= crop_doctor.THRESHOLD:
+        image_action = recommendation_for_image(image_result)
+        if image_action:
+            next_steps.append(image_action)
+    next_steps.extend(
+        [
+            "Photograph affected areas clearly and check whether symptoms are spreading.",
+            "Inspect nearby plants for similar changes and avoid treatment until the cause is clearer.",
+        ]
+    )
+    assessment_report = {
+        "crop": crop_name,
+        "crop_basis": (
+            "Selected by you"
+            if selected_crop
+            else "CNN prediction"
+            if image_prediction and image_result.get("crop")
+            else "AI visual estimate"
+            if visual_review and crop_name
+            else "Not identified"
+        ),
+        "plant_part": (
+            "Not selected"
+            if plant_part.strip().lower() == "select plant part"
+            else plant_part.split(" ", 1)[-1]
+            if " " in plant_part
+            else plant_part
+        ),
+        "visible_symptoms": visible_symptoms,
+        "reported_symptoms": symptom_description,
+        "observed_plant_parts": visual_review.get("plant_parts", []) if visual_review else [],
+        "assessment_type": assessment_type,
+        "confidence": confidence,
+        "possible_causes": possible_causes,
+        "cause_note": cause_note,
+        "next_steps": next_steps,
+        "further_help": (
+            "Share clear photos of both sides of affected leaves and the full fruit, including where "
+            "each mark is located. Note when symptoms began, how quickly they are changing, and recent "
+            "rain or watering. Ask a local agricultural extension officer or plant pathologist if the "
+            "cause remains uncertain."
+        ),
+        "preliminary_note": (
+            (
+                "These image observations are preliminary and are not a confirmed or laboratory diagnosis."
+                if visual_review
+                else "This assessment is preliminary and is not a confirmed or laboratory diagnosis."
+                if symptom_description
+                else "No confirmed diagnosis was made from this image."
+            )
+            if image is not None and not image_prediction
+            else None
+        ),
+        "visual_review_error": visual_review_error,
+    }
 
     return {
         "image_result": image_result,
@@ -568,6 +627,7 @@ def run_crop_diagnosis(
         "recommendations": recommendations,
         "leaf_warning": leaf_warning,
         "eligibility": eligibility,
+        "assessment_report": assessment_report,
     }
 
 

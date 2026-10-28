@@ -7,10 +7,9 @@ Design rules (from the project brief)
 -------------------------------------
 * The API key always comes from ``.env`` (``GEMINI_API_KEY``) - it is never
   hardcoded and never logged.
-* Gemini only *explains* results produced by the models.  It must not invent a
-  different diagnosis: the prompt receives the classifier outputs and the
-  disagreement flag, and is told to report both possibilities when the two
-  models disagree.
+* Explanations use existing model results. Plant photos are sent for visual
+  review only after an explicit user opt-in; that review reports visible
+  features and must not diagnose disease or recommend treatment.
 * Every function is failure-proof: when the key is missing, the network is down
   or the API errors out, a clearly labelled **offline fallback** text built
   from deterministic templates is returned instead, and the Streamlit app keeps
@@ -21,6 +20,7 @@ Public helpers
 ``is_configured()``            - is a Gemini key available?
 ``gemini_status()``            - status dictionary for the UI
 ``generate_description()``     - Crop Doctor diagnosis (3-4 sentences)
+``generate_visual_observations()`` - opt-in, non-diagnostic photo observations
 ``generate_weather_message()`` - farmer friendly weather / disease-risk warning
 ``ask_assistant()``            - free-form agriculture Q&A
 ``build_diagnosis_prompt()``   - the exact prompt (useful for the report)
@@ -28,6 +28,8 @@ Public helpers
 
 from __future__ import annotations
 
+import io
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -154,6 +156,110 @@ def _generate(prompt: str, system_instruction: str, temperature: float = 0.4) ->
         raise GeminiError(
             f"Gemini call failed ({first_error} | {type(exc).__name__}: {exc})"
         ) from exc
+
+
+def generate_visual_observations(image: Any, crop: Optional[str] = None) -> Dict[str, Any]:
+    """Return cautious, non-diagnostic observations from an explicitly shared image."""
+    api_key = get_api_key()
+    if not api_key:
+        raise GeminiError("Photo review is unavailable until an API key is configured.")
+
+    image_buffer = io.BytesIO()
+    image.convert("RGB").save(image_buffer, format="JPEG", quality=88)
+    image_bytes = image_buffer.getvalue()
+    crop_hint = crop or "not specified"
+    prompt = (
+        "Review this plant photo for visible features only. Do not diagnose a disease, infer "
+        "a cause, recommend treatment, or give any confidence score. Do not guess if the crop "
+        "or plant part is unclear. Return only JSON with keys crop, plant_parts, observations. "
+        "Use null for an unclear crop, [] for unclear parts, and [] if no symptom is clearly "
+        "visible. Observations must be short descriptions of directly visible color, shape, "
+        "texture, or location, not diagnoses such as 'fungal'. Qualify uncertain appearance "
+        "with words such as 'looks' or '-like' (for example, 'necrotic-looking'), never claim "
+        "confirmed tissue necrosis. "
+        f"The user's crop selection is {crop_hint!r}; do not treat it as visual evidence."
+    )
+    system_instruction = (
+        "You describe agricultural photographs for farmers. Be conservative: report only "
+        "features plainly visible in the image. An image observation is not a diagnosis."
+    )
+
+    first_error = "No compatible Google AI SDK is installed."
+    try:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model=get_model_name(),
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+            ],
+            config={
+                "system_instruction": system_instruction,
+                "temperature": 0.1,
+                "response_mime_type": "application/json",
+            },
+        )
+        response_text = (getattr(response, "text", None) or "").strip()
+        if not response_text:
+            raise GeminiError("Photo review returned an empty response.")
+    except GeminiError:
+        raise
+    except Exception as exc:
+        first_error = f"{type(exc).__name__}: {exc}"
+        try:
+            import google.generativeai as legacy
+            from PIL import Image
+
+            legacy.configure(api_key=api_key)
+            model = legacy.GenerativeModel(
+                model_name=get_model_name(),
+                system_instruction=system_instruction,
+                generation_config={
+                    "temperature": 0.1,
+                    "response_mime_type": "application/json",
+                },
+            )
+            photo = Image.open(io.BytesIO(image_bytes))
+            response = model.generate_content([prompt, photo])
+            response_text = (getattr(response, "text", None) or "").strip()
+            if not response_text:
+                raise GeminiError("Photo review returned an empty response.")
+        except GeminiError:
+            raise
+        except Exception as exc:
+            raise GeminiError(
+                f"Photo review failed ({first_error} | {type(exc).__name__}: {exc})"
+            ) from exc
+
+    try:
+        result = json.loads(response_text)
+    except json.JSONDecodeError as exc:
+        raise GeminiError("Photo review returned an unreadable observation.") from exc
+    if not isinstance(result, dict):
+        raise GeminiError("Photo review returned an invalid observation.")
+
+    crop_result = result.get("crop")
+    plant_parts = result.get("plant_parts")
+    observations = result.get("observations")
+    if crop_result is not None and not isinstance(crop_result, str):
+        raise GeminiError("Photo review returned an invalid crop description.")
+    if not isinstance(plant_parts, list) or not all(
+        isinstance(part, str) for part in plant_parts
+    ):
+        raise GeminiError("Photo review returned invalid plant-part observations.")
+    if not isinstance(observations, list) or not all(
+        isinstance(item, str) for item in observations
+    ):
+        raise GeminiError("Photo review returned invalid visible observations.")
+
+    return {
+        "crop": crop_result.strip()[:80] if crop_result else None,
+        "plant_parts": [part.strip()[:80] for part in plant_parts[:5]],
+        "observations": [item.strip()[:240] for item in observations[:8] if item.strip()],
+    }
 
 # Deterministic offline fallbacks (used when Gemini is unavailable)
 
